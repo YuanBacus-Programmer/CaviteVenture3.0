@@ -7,28 +7,34 @@ connectDB();
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
 
-  if (!id) {
+  // Check for the provided ID
+  if (!id || typeof id !== 'string') {
     return res.status(400).json({ success: false, message: 'User ID is required' });
   }
 
   if (req.method === 'PUT') {
     const { role } = req.body;
 
+    // Validate role
     if (!['user', 'admin'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role' });
     }
 
     try {
-      const updatedUser = await User.findByIdAndUpdate(id, { role }, { new: true });
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { role: role.toLowerCase() }, // Ensure role is saved in lowercase
+        { new: true }
+      );
+
       if (!updatedUser) {
         return res.status(404).json({ success: false, message: 'User not found' });
       }
+
       return res.status(200).json({ success: true, user: updatedUser });
     } catch (error) {
-      if (error instanceof Error) {
-        return res.status(500).json({ success: false, message: error.message });
-      }
-      return res.status(500).json({ success: false, message: 'An unknown error occurred' });
+      console.error('Error updating user:', error); // Log the error to the console
+      return res.status(500).json({ success: false, message: 'Server error' });
     }
   } else if (req.method === 'DELETE') {
     try {
@@ -38,10 +44,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       return res.status(200).json({ success: true, message: 'User deleted' });
     } catch (error) {
-      if (error instanceof Error) {
-        return res.status(500).json({ success: false, message: error.message });
-      }
-      return res.status(500).json({ success: false, message: 'An unknown error occurred' });
+      console.error('Error deleting user:', error); // Log the error to the console
+      return res.status(500).json({ success: false, message: 'Server error' });
     }
   } else {
     return res.status(405).json({ success: false, message: 'Method not allowed' });

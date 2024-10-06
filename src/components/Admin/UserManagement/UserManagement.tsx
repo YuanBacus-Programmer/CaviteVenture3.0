@@ -41,9 +41,8 @@ export default function UserManagement() {
       const res = await fetch("/api/users");
       const data = await res.json();
       if (data.success) {
-        // Only set users with the role 'user' (in lowercase)
         const userRoleOnly = data.users.filter((user: User) => user.role.toLowerCase() === "user");
-        setUsers(userRoleOnly); // Update the users state with the fetched users having the 'user' role only
+        setUsers(userRoleOnly); // Only set users with the role 'user'
       } else {
         toast.error("Failed to fetch users");
       }
@@ -102,9 +101,8 @@ export default function UserManagement() {
       });
       const data = await res.json();
       if (data.success) {
-        // If the new role is "admin", remove the user from the list
         if (lowerCaseRole === "admin") {
-          setUsers((prevUsers) => prevUsers.filter((user) => user._id !== id));
+          setUsers((prevUsers) => prevUsers.filter((user) => user._id !== id)); // Remove user if promoted to admin
         } else {
           setUsers((prevUsers) =>
             prevUsers.map((user) => (user._id === id ? { ...user, role: lowerCaseRole } : user))
