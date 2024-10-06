@@ -55,21 +55,24 @@ export default function Profile() {
         console.error('No token found');
         return;
       }
-
+  
       const decoded: DecodedToken = jwtDecode(token);
       if (!decoded.userId) {
         console.error('Invalid token: userId not found');
         return;
       }
-
+  
       const response = await fetch(`/api/user/${decoded.userId}`);
-      
-      // Check if the response is HTML (likely an error)
+  
+      // Log response and check if it's HTML instead of JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Expected JSON, received ' + contentType);
+        const text = await response.text(); // Get response as text
+        console.error('Unexpected response format:', text);
+        throw new Error(`Expected JSON, received ${contentType}`);
       }
-
+  
+      // Parse the JSON response
       const data = await response.json();
       if (data.success) {
         setUser(data.data);
@@ -86,6 +89,7 @@ export default function Profile() {
       }
     }
   };
+  
 
   useEffect(() => {
     fetchUserData();
