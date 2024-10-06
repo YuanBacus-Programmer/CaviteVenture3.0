@@ -20,15 +20,13 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 // Main Profile component
-export default function Profile({ user }: ProfileProps) {
+export default function Profile({ }: ProfileProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
       {/* Navbar no longer requires 'user' prop */}
       <Navbar />
       <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome to your Profile, {user.firstName}</h1>
-          {/* Profile1 should manage user data internally if needed */}
           <Profile1 />
         </div>
       </main>

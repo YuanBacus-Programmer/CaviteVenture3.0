@@ -29,7 +29,6 @@ export default function Exhibit({ user }: ExhibitProps) {
       {/* Navbar will get the user from UserContext */}
       <Navbar />
       <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome to the Exhibit page, {user.firstName}</h1>
         <Exhibit1/>
       </main>
     </div>

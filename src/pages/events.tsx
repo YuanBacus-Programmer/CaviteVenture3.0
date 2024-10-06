@@ -29,7 +29,6 @@ export default function Events({ user }: EventsProps) {
       {/* Navbar will get the user from UserContext */}
       <Navbar />
       <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome to the Events page, {user.firstName}</h1>
         <PostEvent/>
       </main>
     </div>

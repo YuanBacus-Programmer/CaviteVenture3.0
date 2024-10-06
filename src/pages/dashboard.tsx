@@ -33,7 +33,6 @@ export default function Dashboard({ user }: DashboardProps) {
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
       <Navbar />
       <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome to your Dashboard, {user.firstName}</h1>
         <Dashboard11/>
         <Dashboard00/>
         <Dashboard22/>
