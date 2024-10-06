@@ -63,15 +63,27 @@ export default function Profile() {
       }
 
       const response = await fetch(`/api/user/${decoded.userId}`);
-      const data = await response.json();
+      
+      // Check if the response is HTML (likely an error)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Expected JSON, received ' + contentType);
+      }
 
+      const data = await response.json();
       if (data.success) {
         setUser(data.data);
       } else {
-        console.error('Error:', data.message);
+        console.error('Error fetching user:', data.message);
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
+      if (error instanceof Error) {
+        console.error('Error fetching user:', error.message);
+        setToast({ show: true, message: 'Error fetching user: ' + error.message, type: 'error' });
+      } else {
+        console.error('Unknown error fetching user.');
+        setToast({ show: true, message: 'Unknown error fetching user.', type: 'error' });
+      }
     }
   };
 
