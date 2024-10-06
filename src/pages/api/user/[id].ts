@@ -8,6 +8,9 @@ connectDB();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
+    // Set cache control to prevent 304 responses and ensure data is not cached in production
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
     // Check if the request method is GET
     if (req.method !== 'GET') {
       return res.status(405).json({ success: false, message: 'Method not allowed' });
@@ -20,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'Invalid user ID format' });
     }
 
-    // Use `lean()` to return a plain object, not a Mongoose document
+    // Fetch the user from the database
     const user = await User.findById(id).lean().exec() as IUser | null;
 
     // Check if the user exists
@@ -39,8 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         role: user.role,
         profilePicture: user.profilePicture || null, // Default null if not available
         isVerified: user.isVerified,
-        createdAt: user.createdAt.toISOString(), // Serialize dates to ISO string
-        updatedAt: user.updatedAt.toISOString(),
+        createdAt: user.createdAt?.toISOString(), // Serialize dates to ISO string
+        updatedAt: user.updatedAt?.toISOString(),
       },
     });
   } catch (error) {

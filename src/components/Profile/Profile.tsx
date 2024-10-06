@@ -18,7 +18,7 @@ export default function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Fetch user data from server
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -57,9 +57,10 @@ export default function Profile() {
     }
   };
 
+  // Fetch user data on mount
   useEffect(() => {
     fetchUserData();
-  }, [fetchUserData]);
+  }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
