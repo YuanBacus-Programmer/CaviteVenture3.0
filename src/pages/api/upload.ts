@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
 import fs from 'fs';
-import path from 'path';
 import connectDB from '@/utils/connectDB';
 import User from '@/model/User';
 import jwt, { JwtPayload } from 'jsonwebtoken';
@@ -37,14 +36,6 @@ export const config = {
 // Ensure MongoDB connection
 connectDB();
 
-// Define the directory to store uploaded files
-const uploadDir = path.join(process.cwd(), '/public/uploads');
-
-// Ensure the upload directory exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
 // Max file size for uploads in bytes (2MB here)
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
@@ -57,9 +48,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Setup formidable with max file size and target upload directory
+    // Setup formidable with max file size
     const form = formidable({
-      uploadDir,
       keepExtensions: true, // Keep the file extension of the uploaded file
       maxFileSize: MAX_FILE_SIZE, // Limit the file size to prevent abuse
       filter: ({ mimetype }) => {
@@ -118,26 +108,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
-    const fileExtension = path.extname(file.newFilename).toLowerCase();
+    const fileExtension = file.originalFilename?.split('.').pop()?.toLowerCase();
 
-    if (!allowedExtensions.includes(fileExtension)) {
+    if (!allowedExtensions.includes(fileExtension || '')) {
       return res.status(400).json({ success: false, message: 'Invalid file type. Only images are allowed (jpg, jpeg, png, gif).' });
     }
 
-    const imageUrl = `/uploads/${file.newFilename}`;
+    // Convert the file to a binary buffer
+    const fileBuffer = fs.readFileSync(file.filepath);
 
-    // Update the user's profile picture in the database
-    const user = await User.findByIdAndUpdate(userId, { profilePicture: imageUrl }, { new: true });
+    // Update the user's profile picture in the database (store the binary data)
+    const user = await User.findByIdAndUpdate(userId, { profilePicture: fileBuffer }, { new: true });
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    // Return the response with the new image URL
-    return res.status(200).json({ success: true, imageUrl });
+    // Return the response
+    return res.status(200).json({ success: true, message: 'Profile picture updated successfully!' });
   } catch (error) {
     // Log the error for debugging purposes
-    console.error('Error in the upload handler:', error); // This resolves the ESLint warning
+    if (error instanceof Error) {
+      console.error('Error in the upload handler:', error.message);
+    } else {
+      console.error('Unknown error in the upload handler:', error);
+    }
     return res.status(500).json({ success: false, message: 'Server error during file upload.' });
   }
 }
