@@ -4,74 +4,61 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUpload } from 'react-icons/fi';
-import { useRouter } from 'next/router';
-import Navbar from '@/components/Navbar/Navbar'; // Navbar doesn't need 'user' prop
+import { useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar/Navbar';
 import { Toast } from '@/components/Toast/Toast';
-import { jwtDecode } from 'jwt-decode'; // Correct default import
-
-interface User {
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  profilePicture?: string;
-}
-
-interface DecodedToken {
-  userId: string;
-  email: string;
-  role: string;
-  iat: number;
-  exp: number;
-}
-
-type ToastType = 'success' | 'error';
-
-interface ToastState {
-  show: boolean;
-  message: string;
-  type: ToastType;
-}
+import { jwtDecode } from 'jwt-decode'; // Correct import for named export
+import { DecodedToken, IUser, ToastState } from '@/types'; // Corrected imports
 
 export default function Profile() {
   const router = useRouter();
-  const [user, setUser] = useState<User>({
+  const [user, setUser] = useState<IUser>({
+    _id: '',
     firstName: '',
     lastName: '',
     email: '',
     role: '',
-    profilePicture: '/placeholder-user.jpg', // Default image when none is uploaded
+    profilePicture: '/placeholder-user.jpg',
+    isVerified: false,
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
 
-  // Fetch user data from API
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('No token found');
+        router.push('/signin');
         return;
       }
 
-      const decoded: DecodedToken = jwtDecode(token); // Correct usage
+      const decoded: DecodedToken = jwtDecode(token);
       if (!decoded.userId) {
         console.error('Invalid token: userId not found');
+        router.push('/signin');
         return;
       }
 
-      const response = await fetch(`/api/user/${decoded.userId}`);
-      const data = await response.json();
+      const response = await fetch(`/api/user/${decoded.userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+
+      const data = await response.json();
       if (data.success) {
         setUser(data.data);
       } else {
-        console.error('Error:', data.message);
+        throw new Error(data.message || 'Error fetching user data');
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
+      console.error('Error fetching user data:', error);
+      router.push('/signin');
     }
   };
 
@@ -86,35 +73,41 @@ export default function Profile() {
       formData.append('profilePicture', file);
 
       const token = localStorage.getItem('token');
-      formData.append('token', token || '');
+      if (!token) {
+        setToast({ show: true, message: 'Authentication error. Please log in again.', type: 'error' });
+        return;
+      }
 
       setIsUploading(true);
+
       try {
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
+          headers: { Authorization: `Bearer ${token}` },
         });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+
         const data = await response.json();
 
-        if (response.ok) {
-          const newProfilePicture = data.imageUrl;
-          setUser((prevUser) => ({ ...prevUser, profilePicture: newProfilePicture }));
+        if (data.imageUrl) {
+          setUser((prevUser: IUser) => ({ ...prevUser, profilePicture: data.imageUrl }));
 
-          // Update the user profile with the new image URL
           await fetch('/api/user/update', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              token,
-              profilePicture: newProfilePicture, // Save image URL in the database
-            }),
+            body: JSON.stringify({ profilePicture: data.imageUrl }),
           });
 
           setToast({ show: true, message: 'Profile picture updated successfully!', type: 'success' });
         } else {
-          setToast({ show: true, message: 'Failed to upload image.', type: 'error' });
+          throw new Error('Image URL not received');
         }
       } catch (error) {
         console.error('Error uploading profile picture:', error);
@@ -128,28 +121,34 @@ export default function Profile() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setToast({ show: true, message: 'Authentication error. Please log in again.', type: 'error' });
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/user/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          token,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          profilePicture: user.profilePicture, // Ensure profilePicture is saved on update
-        }),
+        body: JSON.stringify(user),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
 
       const data = await response.json();
       if (data.success) {
         setIsEditing(false);
         setToast({ show: true, message: 'Profile updated successfully!', type: 'success' });
       } else {
-        setToast({ show: true, message: 'Failed to update profile.', type: 'error' });
+        throw new Error(data.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -160,7 +159,8 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    setUser({ firstName: '', lastName: '', email: '', role: '', profilePicture: '/placeholder-user.jpg' });
+    localStorage.removeItem('token');
+    setUser({ firstName: '', lastName: '', email: '', role: '', profilePicture: '/placeholder-user.jpg', _id: '', isVerified: false });
     setToast({ show: true, message: 'Logged out successfully!', type: 'success' });
 
     setTimeout(() => {
@@ -170,7 +170,6 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
-      {/* Navbar no longer requires 'user' prop */}
       <Navbar />
       <AnimatePresence>
         {toast.show && <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />}
@@ -281,6 +280,7 @@ export default function Profile() {
                   />
                 </motion.div>
               </div>
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

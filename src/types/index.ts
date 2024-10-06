@@ -10,3 +10,19 @@ export interface IUser {
  createdAt?: Date;
  updatedAt?: Date;
 }
+
+export interface DecodedToken {
+ userId: string;
+ email: string;
+ role: string;
+ iat: number;
+ exp: number;
+}
+
+export type ToastType = 'success' | 'error';
+
+export interface ToastState {
+ show: boolean;
+ message: string;
+ type: ToastType;
+}
