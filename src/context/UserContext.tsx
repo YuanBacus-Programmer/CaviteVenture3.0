@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { jwtDecode } from 'jwt-decode'; // Import as a named import
 
 interface User {
   firstName: string;
@@ -10,12 +11,23 @@ interface User {
 
 interface UserContextType {
   user: User | null;
-  setUser: (user: User) => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  loading: boolean;
+}
+
+// Define the expected structure of the token
+interface DecodedToken {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  profilePicture?: string;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const useUser = () => {
+export const useUser = (): UserContextType => {
   const context = useContext(UserContext);
   if (!context) {
     throw new Error('useUser must be used within a UserProvider');
@@ -25,21 +37,78 @@ export const useUser = () => {
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Load user data from localStorage on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+  // Function to decode the token and extract user info
+  const decodeToken = (token: string): User | null => {
+    try {
+      const decoded: DecodedToken = jwtDecode<DecodedToken>(token); // Properly type the decoded token
+      return {
+        firstName: decoded.firstName,
+        lastName: decoded.lastName,
+        email: decoded.email,
+        role: decoded.role,
+        profilePicture: decoded.profilePicture || '',
+      };
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
     }
+  };
+
+  // Load user data from the token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const user = decodeToken(token);
+      if (user) {
+        setUser(user);
+      }
+    }
+    setLoading(false);
   }, []);
 
-  // Sync user data to localStorage whenever it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    }
-  }, [user]);
+  // Login function
+  const login = async (email: string, password: string): Promise<boolean> => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
 
-  return <UserContext.Provider value={{ user, setUser }}>{children}</UserContext.Provider>;
+      if (data.success) {
+        localStorage.setItem('token', data.token); // Store the token
+        const user = decodeToken(data.token);      // Decode token to get user data
+        if (user) {
+          setUser(user);
+        }
+        setLoading(false);
+        return true;
+      } else {
+        setLoading(false);
+        return false;
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      setLoading(false);
+      return false;
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+  };
+
+  return (
+    <UserContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </UserContext.Provider>
+  );
 };

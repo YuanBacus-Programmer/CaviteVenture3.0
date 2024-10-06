@@ -1,33 +1,44 @@
 "use client"
 
-import React, { useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { FiHome, FiImage, FiCalendar, FiChevronDown, FiMenu, FiX } from 'react-icons/fi'
-import { useUser } from '@/context/UserContext'
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiHome, FiImage, FiCalendar, FiChevronDown, FiMenu, FiX } from 'react-icons/fi';
+import { useUser } from '@/context/UserContext';
 
 export default function Navbar() {
-  const pathname = usePathname()
-  const { user } = useUser()
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname();
+  const { user } = useUser();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
 
-  if (!user) return null
+  // Role-based redirection for protected routes
+  useEffect(() => {
+    if (pathname === '/admin' && user?.role !== 'admin') {
+      router.push('/dashboard');
+    } else if (pathname === '/superadmin' && user?.role !== 'superadmin') {
+      router.push('/dashboard');
+    }
+  }, [pathname, user?.role, router]);
+
+  if (!user) return null;
 
   const links = [
     { href: '/dashboard', label: 'Dashboard', icon: FiHome },
     { href: '/exhibit', label: 'Exhibit', icon: FiImage },
     { href: '/events', label: 'Events', icon: FiCalendar },
-  ]
+  ];
 
-  const toggleDropdown = () => setDropdownOpen((prev) => !prev)
-  const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev)
+  const toggleDropdown = () => setDropdownOpen((prev) => !prev);
+  const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
 
   return (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 ">
-      <nav className="bg-[#fff8e1] rounded-full backdrop-blur-sm bg-opacity-80 overflow-visible px-4 py-2 w-auto max-w-3xl ">
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+      <nav className="bg-[#fff8e1] rounded-full backdrop-blur-sm bg-opacity-80 overflow-visible px-4 py-2 w-auto max-w-3xl">
         <motion.div
           className="absolute inset-0 bg-[#fae8b4] opacity-30 rounded-full"
           animate={{
@@ -40,9 +51,9 @@ export default function Navbar() {
             repeatType: 'reverse',
           }}
         />
-        <div className="relative z-20  mr-40">
-          <div className="flex justify-between items-center h-12  mr-40">
-            <Link href="/dashboard" className="text-xl font-bold text-gray-800 mr-32">
+        <div className="relative z-20">
+          <div className="flex justify-between items-center h-12">
+            <Link href="/dashboard" className="text-xl font-bold text-gray-800">
               CaviteVenture
             </Link>
             
@@ -84,7 +95,7 @@ export default function Navbar() {
             {/* User Dropdown */}
             <div className="relative hidden md:block">
               <motion.button
-                className="flex items-center text-gray-800 hover:text-gray-600 focus:outline-none bg-[#f5d78e] bg-opacity-50 rounded-full px-3 py-2 ml-36"
+                className="flex items-center text-gray-800 hover:text-gray-600 focus:outline-none bg-[#f5d78e] bg-opacity-50 rounded-full px-3 py-2"
                 onClick={toggleDropdown}
                 whileHover={{ 
                   scale: 1.05,
@@ -119,6 +130,7 @@ export default function Navbar() {
                         Profile
                       </motion.div>
                     </Link>
+                    {/* Show Admin Panel only for users with the 'admin' role */}
                     {user.role === 'admin' && (
                       <Link href="/admin" passHref>
                         <motion.div 
@@ -129,6 +141,7 @@ export default function Navbar() {
                         </motion.div>
                       </Link>
                     )}
+                    {/* Show Superadmin Panel only for users with the 'superadmin' role */}
                     {user.role === 'superadmin' && (
                       <Link href="/superadmin" passHref>
                         <motion.div 
@@ -138,6 +151,11 @@ export default function Navbar() {
                           Superadmin Panel
                         </motion.div>
                       </Link>
+                    )}
+                    {!user.role && (
+                      <div className="block px-4 py-2 text-sm text-red-600">
+                        Role not defined. Contact support.
+                      </div>
                     )}
                   </motion.div>
                 )}
@@ -187,6 +205,7 @@ export default function Navbar() {
                     Profile
                   </motion.div>
                 </Link>
+                {/* Show Admin Panel only for users with the 'admin' role */}
                 {user.role === 'admin' && (
                   <Link href="/admin" passHref>
                     <motion.div
@@ -202,6 +221,7 @@ export default function Navbar() {
                     </motion.div>
                   </Link>
                 )}
+                {/* Show Superadmin Panel only for users with the 'superadmin' role */}
                 {user.role === 'superadmin' && (
                   <Link href="/superadmin" passHref>
                     <motion.div
@@ -223,5 +243,5 @@ export default function Navbar() {
         </div>
       </nav>
     </div>
-  )
+  );
 }
