@@ -41,7 +41,6 @@ export default function UserManagement() {
       const res = await fetch("/api/users");
       const data = await res.json();
       if (data.success) {
-        // Only set users with the role 'user' (in lowercase)
         const userRoleOnly = data.users.filter((user: User) => user.role.toLowerCase() === "user");
         setUsers(userRoleOnly); // Update the users state with the fetched users having the 'user' role only
       } else {
@@ -89,50 +88,47 @@ export default function UserManagement() {
     )
   );
 
- // Handle role update
-const handleEditRole = async (id: string, newRole: string) => {
-  try {
-    const lowerCaseRole = newRole.toLowerCase(); // Ensure role is lowercase
-    const res = await fetch(`/api/users/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ role: lowerCaseRole }),
-    });
+  // Handle role update
+  const handleEditRole = async (id: string, newRole: string) => {
+    try {
+      const lowerCaseRole = newRole.toLowerCase(); // Ensure role is lowercase
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: lowerCaseRole }),
+      });
 
-    if (!res.ok) {
-      const errorMessage = await res.text(); // Get the error message from the server
-      throw new Error(errorMessage || 'Failed to update role');
-    }
-
-    const data = await res.json(); // Parse JSON response
-
-    if (data.success) {
-      if (lowerCaseRole === 'admin') {
-        setUsers((prevUsers) => prevUsers.filter((user) => user._id !== id));
-      } else {
-        setUsers((prevUsers) =>
-          prevUsers.map((user) => (user._id === id ? { ...user, role: lowerCaseRole } : user))
-        );
+      if (!res.ok) {
+        const errorMessage = await res.text(); // Get the error message from the server
+        throw new Error(errorMessage || 'Failed to update role');
       }
-      toast.success('Role updated successfully!');
-    } else {
-      throw new Error(data.message || 'Failed to update role');
-    }
-  } catch (error) {
-    // Type guard to check if the error is an instance of Error
-    if (error instanceof Error) {
-      console.error('Error updating role:', error.message);
-      toast.error(`Error updating role: ${error.message}`);
-    } else {
-      // Handle the case where error is not an instance of Error
-      console.error('Unexpected error updating role:', error);
-      toast.error('Unexpected error updating role');
-    }
-  }
-};
 
+      const data = await res.json(); // Parse JSON response
+
+      if (data.success) {
+        if (lowerCaseRole === 'admin') {
+          setUsers((prevUsers) => prevUsers.filter((user) => user._id !== id));
+        } else {
+          setUsers((prevUsers) =>
+            prevUsers.map((user) => (user._id === id ? { ...user, role: lowerCaseRole } : user))
+          );
+        }
+        toast.success('Role updated successfully!');
+      } else {
+        throw new Error(data.message || 'Failed to update role');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error updating role:', error.message);
+        toast.error(`Error updating role: ${error.message}`);
+      } else {
+        console.error('Unexpected error updating role:', error);
+        toast.error('Unexpected error updating role');
+      }
+    }
+  };
 
   // Handle user delete
   const handleDelete = async (id: string) => {
