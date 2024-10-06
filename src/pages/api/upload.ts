@@ -5,6 +5,27 @@ import path from 'path';
 import connectDB from '@/utils/connectDB';
 import User from '@/model/User';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import Cors from 'cors'; // Use CORS for handling cross-origin requests
+
+// Install TypeScript types: npm install --save-dev @types/cors
+
+// Initialize the cors middleware
+const cors = Cors({
+  methods: ['POST', 'GET', 'HEAD'],
+  origin: '*', // Replace with your frontend domain for production (e.g., 'https://yourdomain.com')
+});
+
+// Helper method to apply CORS middleware with typed function
+function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: (req: NextApiRequest, res: NextApiResponse, result: (result: unknown) => void) => void) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result: unknown) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
 
 // Disable body parsing to allow formidable to handle file uploads
 export const config = {
@@ -28,6 +49,9 @@ if (!fs.existsSync(uploadDir)) {
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Apply CORS middleware
+  await runMiddleware(req, res, cors);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
@@ -45,8 +69,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Helper function to parse the form data
-    const parseForm = () => {
-      return new Promise<{ fields: formidable.Fields, files: formidable.Files }>((resolve, reject) => {
+    const parseForm = (): Promise<{ fields: formidable.Fields, files: formidable.Files }> => {
+      return new Promise((resolve, reject) => {
         form.parse(req, (err, fields, files) => {
           if (err) reject(err);
           resolve({ fields, files });
@@ -82,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Handle the file upload
-    const file = Array.isArray(files.profilePicture) ? files.profilePicture[0] : files.profilePicture as formidable.File | undefined;
+    const file = Array.isArray(files.profilePicture) ? files.profilePicture[0] : (files.profilePicture as formidable.File | undefined);
 
     if (!file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
@@ -113,7 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ success: true, imageUrl });
   } catch (error) {
     // Log the error for debugging purposes
-    console.error('Error in the upload handler:', error); // Use the error
+    console.error('Error in the upload handler:', error); // This resolves the ESLint warning
     return res.status(500).json({ success: false, message: 'Server error during file upload.' });
   }
 }
