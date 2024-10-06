@@ -47,7 +47,7 @@ export default function SignUp() {
     };
 
     try {
-      const response = await fetch('/api/auth/signup/route', {
+      const response = await fetch('/api/auth/route', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -285,7 +285,7 @@ export default function SignUp() {
           <div className="text-center mt-4">
             <p className="text-sm text-gray-600">
               Already have an account?{" "}
-              <Link href="/Signin" className="text-blue-600 hover:underline font-medium">
+              <Link href="/signin" className="text-blue-600 hover:underline font-medium">
                 Sign in
               </Link>
             </p>
