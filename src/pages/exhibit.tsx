@@ -1,9 +1,7 @@
 import { GetServerSidePropsContext } from 'next';
 import { requireAuth } from '../utils/authMiddleware';
-import { useUser } from '@/context/UserContext';
-import { useEffect } from 'react';
+import Navbar from '@/components/Navbar/Navbar';
 import Exhibit1 from '@/components/Exhibit/Exhibit';
-import Layout from '@/components/Layout/Layout';
 import Head from 'next/head';
 
 interface User {
@@ -17,35 +15,36 @@ interface ExhibitProps {
   user: User;
 }
 
-export default function Exhibit({ user }: ExhibitProps) {
-  const { setUser } = useUser();
-
-  useEffect(() => {
-    setUser(user);
-  }, [user, setUser]);
-
-  return (
-    <Layout>
-      <Head>
-        <title>Exhibit | Exhibit1</title>
-        <meta name="description" content="Exhibit1 details and management page." />
-      </Head>
-      <Exhibit1 />
-    </Layout>
-  );
-}
-
+// Fetch user on the server-side
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   try {
-    const authResult = await requireAuth(ctx);
+    const authResult = await requireAuth(ctx); // Ensure user is authenticated
     return authResult;
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('Authentication error:', error); // Log errors
     return {
       redirect: {
-        destination: '/login',
+        destination: '/login', // Redirect to login page if not authenticated
         permanent: false,
       },
     };
   }
 };
+
+// Main Exhibit component
+export default function Exhibit({ }: ExhibitProps) {
+  return (
+    <>
+      <Head>
+        <title>Exhibit | Exhibit1</title>
+        <meta name="description" content="Exhibit1 details and management page." />
+      </Head>
+      <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
+        <Navbar />
+        <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <Exhibit1 />
+        </main>
+      </div>
+    </>
+  );
+}
