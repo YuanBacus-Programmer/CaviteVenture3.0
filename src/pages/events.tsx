@@ -1,10 +1,10 @@
 import { GetServerSidePropsContext } from 'next';
 import { requireAuth } from '../utils/authMiddleware';
-import Navbar from '@/components/Navbar/Navbar';
-import { useUser } from '@/context/UserContext'; // Import the UserContext hook
+import { useUser } from '@/context/UserContext';
 import { useEffect } from 'react';
 import PostEvent from '@/components/Superadmin/EventManagement/PostEvent';
-import Head from 'next/head'; // Import for SEO
+import Layout from '@/components/Layout/Layout';
+import Head from 'next/head';
 
 interface User {
   firstName: string;
@@ -18,40 +18,32 @@ interface EventsProps {
 }
 
 export default function Events({ user }: EventsProps) {
-  const { setUser } = useUser(); // Use UserContext to set the user globally
+  const { setUser } = useUser();
 
-  // Set the user in the context when the page loads
   useEffect(() => {
     setUser(user);
   }, [user, setUser]);
 
   return (
-    <>
+    <Layout>
       <Head>
-        <title>Event Management | Superadmin</title> {/* SEO improvements */}
+        <title>Event Management | Superadmin</title>
         <meta name="description" content="Manage and post events as a superadmin." />
       </Head>
-
-      <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
-        <Navbar />
-        <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <PostEvent />
-        </main>
-      </div>
-    </>
+      <PostEvent />
+    </Layout>
   );
 }
 
-// Ensure only authenticated users can access this page
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   try {
-    const authResult = await requireAuth(ctx); // Secure authentication
-    return authResult; // Pass the authenticated user to the page
+    const authResult = await requireAuth(ctx);
+    return authResult;
   } catch (error) {
-    console.error('Authentication error:', error); // Log the error in production for better debugging
+    console.error('Authentication error:', error);
     return {
       redirect: {
-        destination: '/login', // Redirect to login page if auth fails
+        destination: '/login',
         permanent: false,
       },
     };
