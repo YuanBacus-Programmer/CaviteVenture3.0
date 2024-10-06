@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { role } = req.body;
 
     // Validate role
-    if (!['user', 'admin'].includes(role)) {
+    if (!['user', 'admin', 'superadmin'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role' });
     }
 
@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       return res.status(200).json({ success: true, user: updatedUser });
     } catch (error) {
-      console.error('Error updating user:', error); // Log the error to the console
+      console.error('Error updating user:', error); // Log the error
       return res.status(500).json({ success: false, message: 'Server error' });
     }
   } else if (req.method === 'DELETE') {
@@ -44,10 +44,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       return res.status(200).json({ success: true, message: 'User deleted' });
     } catch (error) {
-      console.error('Error deleting user:', error); // Log the error to the console
+      console.error('Error deleting user:', error); // Log the error
       return res.status(500).json({ success: false, message: 'Server error' });
     }
   } else {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
+    return res.status(405).json({ success: false, message: 'Method Not Allowed' });
   }
 }

@@ -3,14 +3,13 @@ import connectDB from '@/utils/connectDB'; // Ensure correct path to DB connecti
 import User from '@/model/User'; // Ensure correct path to your User model
 
 // Connect to the database
-// Ensure connectDB throws and handles connection errors correctly
 connectDB();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      // Fetch all users from MongoDB
-      const users = await User.find();
+      // Fetch all users from MongoDB and exclude sensitive fields like password
+      const users = await User.find().select('-password');
 
       // If no users are found, send a 404 response
       if (!users.length) {
@@ -30,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
   } else {
-    // Handle non-GET requests
+    // Handle unsupported HTTP methods
     return res.status(405).json({ success: false, message: 'Method Not Allowed' });
   }
 }
