@@ -21,29 +21,44 @@ export default function Profile() {
   // Fetch user data from server
   const fetchUserData = async () => {
     try {
+      // Debugging token retrieval in production
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('No token found');
         router.push('/signin');
         return;
       }
-
+  
+      // Debug log the token and decoded data
+      console.log('Token:', token);
+  
       const decoded: DecodedToken = jwtDecode(token);
       if (!decoded.userId) {
         console.error('Invalid token: userId not found');
         router.push('/signin');
         return;
       }
-
-      const response = await fetch(`/api/user/${decoded.userId}`, {
+  
+      console.log('Decoded userId:', decoded.userId);
+  
+      // Debug the API endpoint being used
+      const apiUrl = `/api/user/${decoded.userId}`;
+      console.log('API URL:', apiUrl);
+  
+      const response = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+  
+      // Log the status of the API response
+      console.log('API response status:', response.status);
+  
       if (!response.ok) {
         throw new Error('Failed to fetch user data');
       }
-
+  
       const data = await response.json();
+      console.log('API response data:', data);
+  
       if (data.success) {
         setUser(data.data); // Set user data
       } else {
@@ -56,6 +71,7 @@ export default function Profile() {
       setIsLoading(false); // Data has been fetched, stop loading
     }
   };
+  
 
   // Fetch user data on mount
   useEffect(() => {

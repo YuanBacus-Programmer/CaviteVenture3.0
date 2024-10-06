@@ -8,7 +8,7 @@ connectDB();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Set cache control to prevent 304 responses and ensure data is not cached in production
+    // Set cache control to prevent caching in production environments
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
     // Check if the request method is GET
@@ -23,11 +23,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'Invalid user ID format' });
     }
 
+    // Log the request for production debugging
+    console.log(`Fetching user data for ID: ${id}`);
+
     // Fetch the user from the database
     const user = await User.findById(id).lean().exec() as IUser | null;
 
     // Check if the user exists
     if (!user) {
+      console.error(`User not found with ID: ${id}`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
@@ -47,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
   } catch (error) {
-    // Log the error for debugging purposes
+    // Log the error for production debugging
     console.error('Error fetching user:', error);
 
     // Return a server error response
