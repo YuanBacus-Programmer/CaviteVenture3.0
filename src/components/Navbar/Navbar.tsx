@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FiHome, FiImage, FiCalendar, FiChevronDown, FiMenu, FiX } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 
-const Navbar: React.FC = () => {
+export default function Navbar() {
   const pathname = usePathname()
   const { user } = useUser()
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -26,8 +26,8 @@ const Navbar: React.FC = () => {
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev)
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 py-4">
-      <nav className="bg-[#fff8e1] rounded-full backdrop-blur-sm bg-opacity-80 overflow-visible">
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 ">
+      <nav className="bg-[#fff8e1] rounded-full backdrop-blur-sm bg-opacity-80 overflow-visible px-4 py-2 w-auto max-w-3xl ">
         <motion.div
           className="absolute inset-0 bg-[#fae8b4] opacity-30 rounded-full"
           animate={{
@@ -40,14 +40,14 @@ const Navbar: React.FC = () => {
             repeatType: 'reverse',
           }}
         />
-        <div className="relative z-20">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="text-xl font-bold text-gray-800">
+        <div className="relative z-20  mr-40">
+          <div className="flex justify-between items-center h-12  mr-40">
+            <Link href="/dashboard" className="text-xl font-bold text-gray-800 mr-32">
               CaviteVenture
             </Link>
             
             {/* Desktop Menu */}
-            <div className="hidden md:flex flex-grow justify-center items-center space-x-1">
+            <div className="hidden md:flex items-center space-x-1">
               {links.map((link) => (
                 <Link key={link.href} href={link.href} passHref>
                   <motion.div
@@ -56,7 +56,10 @@ const Navbar: React.FC = () => {
                         ? 'bg-[#f5d78e] text-gray-900'
                         : 'text-gray-700 hover:bg-[#f5d78e] hover:text-gray-900'
                     }`}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ 
+                      scale: 1.05,
+                      boxShadow: '0 0 8px 2px rgba(255, 255, 255, 0.5)',
+                    }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <link.icon className="mr-2" />
@@ -81,13 +84,16 @@ const Navbar: React.FC = () => {
             {/* User Dropdown */}
             <div className="relative hidden md:block">
               <motion.button
-                className="flex items-center text-gray-800 hover:text-gray-600 focus:outline-none bg-[#f5d78e] bg-opacity-50 rounded-full px-3 py-2"
+                className="flex items-center text-gray-800 hover:text-gray-600 focus:outline-none bg-[#f5d78e] bg-opacity-50 rounded-full px-3 py-2 ml-36"
                 onClick={toggleDropdown}
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ 
+                  scale: 1.05,
+                  boxShadow: '0 0 8px 2px rgba(255, 255, 255, 0.5)',
+                }}
                 whileTap={{ scale: 0.95 }}
               >
                 <Image
-                  src={user.profilePicture || '/placeholder-user.jpg'}
+                  src={user.profilePicture || '/placeholder.svg?height=24&width=24'}
                   alt="Profile"
                   width={24}
                   height={24}
@@ -106,22 +112,31 @@ const Navbar: React.FC = () => {
                     className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-50"
                   >
                     <Link href="/profile" passHref>
-                      <div className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer">
+                      <motion.div 
+                        className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                        whileHover={{ backgroundColor: '#f5d78e' }}
+                      >
                         Profile
-                      </div>
+                      </motion.div>
                     </Link>
                     {user.role === 'admin' && (
                       <Link href="/admin" passHref>
-                        <div className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer">
+                        <motion.div 
+                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                          whileHover={{ backgroundColor: '#f5d78e' }}
+                        >
                           Admin Panel
-                        </div>
+                        </motion.div>
                       </Link>
                     )}
                     {user.role === 'superadmin' && (
                       <Link href="/superadmin" passHref>
-                        <div className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer">
+                        <motion.div 
+                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                          whileHover={{ backgroundColor: '#f5d78e' }}
+                        >
                           Superadmin Panel
-                        </div>
+                        </motion.div>
                       </Link>
                     )}
                   </motion.div>
@@ -137,7 +152,7 @@ const Navbar: React.FC = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="md:hidden bg-white rounded-b-lg shadow-lg overflow-hidden"
+                className="md:hidden bg-white rounded-b-lg shadow-lg overflow-hidden mt-2"
               >
                 {links.map((link) => (
                   <Link key={link.href} href={link.href} passHref>
@@ -148,6 +163,10 @@ const Navbar: React.FC = () => {
                           : 'text-gray-700 hover:bg-[#f5d78e] hover:text-gray-900'
                       }`}
                       onClick={() => setMobileMenuOpen(false)}
+                      whileHover={{ 
+                        backgroundColor: '#f5d78e',
+                        boxShadow: '0 0 8px 2px rgba(255, 255, 255, 0.5)',
+                      }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <link.icon className="mr-2" />
@@ -159,6 +178,10 @@ const Navbar: React.FC = () => {
                   <motion.div
                     className="flex items-center px-4 py-3 text-gray-700 hover:bg-[#f5d78e] hover:text-gray-900"
                     onClick={() => setMobileMenuOpen(false)}
+                    whileHover={{ 
+                      backgroundColor: '#f5d78e',
+                      boxShadow: '0 0 8px 2px rgba(255, 255, 255, 0.5)',
+                    }}
                     whileTap={{ scale: 0.95 }}
                   >
                     Profile
@@ -169,6 +192,10 @@ const Navbar: React.FC = () => {
                     <motion.div
                       className="flex items-center px-4 py-3 text-gray-700 hover:bg-[#f5d78e] hover:text-gray-900"
                       onClick={() => setMobileMenuOpen(false)}
+                      whileHover={{ 
+                        backgroundColor: '#f5d78e',
+                        boxShadow: '0 0 8px 2px rgba(255, 255, 255, 0.5)',
+                      }}
                       whileTap={{ scale: 0.95 }}
                     >
                       Admin Panel
@@ -180,6 +207,10 @@ const Navbar: React.FC = () => {
                     <motion.div
                       className="flex items-center px-4 py-3 text-gray-700 hover:bg-[#f5d78e] hover:text-gray-900"
                       onClick={() => setMobileMenuOpen(false)}
+                      whileHover={{ 
+                        backgroundColor: '#f5d78e',
+                        boxShadow: '0 0 8px 2px rgba(255, 255, 255, 0.5)',
+                      }}
                       whileTap={{ scale: 0.95 }}
                     >
                       Superadmin Panel
@@ -194,5 +225,3 @@ const Navbar: React.FC = () => {
     </div>
   )
 }
-
-export default Navbar
