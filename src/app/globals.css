@@ -1,27 +1,78 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Global smooth scroll behavior for a better user experience */
+html {
+  scroll-behavior: smooth;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Custom Components using @layer */
+@layer components {
+
+  /* Button Styles */
+  .btn {
+    @apply bg-black text-white px-4 py-2 rounded-lg font-medium inline-flex items-center justify-center tracking-tight transition duration-200 ease-in-out;
+  }
+
+  .btn-primary {
+    @apply bg-black text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500;
+  }
+
+  .btn-text {
+    @apply text-black bg-transparent hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300;
+  }
+
+  .btn-secondary {
+    @apply bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-400;
+  }
+
+  /* Logo and Image Ticker */
+  .logo-ticker-image {
+    @apply h-8 w-auto;
+  }
+
+  /* Tag Styles */
+  .tag {
+    @apply text-sm inline-flex border border-[#222]/10 px-3 py-1 rounded-lg tracking-tight;
+  }
+
+  /* Section Title */
+  .section-title {
+    @apply text-center text-3xl md:text-[54px] md:leading-[60px] font-bold tracking-tighter bg-gradient-to-b from-black to-[#cbbd93] text-transparent bg-clip-text mt-5;
+  }
+
+  /* Section Description */
+  .section-description {
+    @apply text-center text-[22px] leading-[30px] tracking-tight text-[#010D3E] mt-5;
+  }
+
+  /* Card Component */
+  .card {
+    @apply p-10 border border-[#222222]/10 rounded-3xl shadow-[0_7px_14px_#EAEAEA] max-w-xs w-full hover:shadow-lg transition-shadow duration-200 ease-in-out;
+  }
+
+  /* Input Field */
+  .input {
+    @apply w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out;
+  }
+
+  /* Utility classes for sections */
+  .section {
+    @apply my-10 px-4 md:px-8;
   }
 }
 
+/* Additional global styles */
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Cinzel', serif; /* Example of historical theme font */
+  color: #333;
+  background-color: #fafafa;
+  margin: 0;
+  padding: 0;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Ensure all images are responsive */
+img {
+  @apply max-w-full h-auto;
 }
