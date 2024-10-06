@@ -97,7 +97,7 @@ export default function UserManagement() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ role: lowerCaseRole }),
+        body: JSON.stringify({ role: lowerCaseRole }), // Send the new role
       });
 
       if (!res.ok) {
