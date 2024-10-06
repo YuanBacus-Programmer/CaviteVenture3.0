@@ -1,12 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import connectDB from '@/utils/connectDB';
-import User from '@/model/User'; // Ensure the correct path to your User model
+import connectDB from '@/utils/connectDB'; // Ensure correct path to DB connection utility
+import User from '@/model/User'; // Ensure correct path to your User model
 
 // Connect to the database
+// Ensure connectDB throws and handles connection errors correctly
 connectDB();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Handle only GET requests
   if (req.method === 'GET') {
     try {
       // Fetch all users from MongoDB
@@ -18,19 +18,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Return the users with a success response
-      res.status(200).json({ success: true, users });
+      return res.status(200).json({ success: true, users });
     } catch (error) {
-      // Type check the error and return a 500 error if something went wrong
+      // Ensure the error is properly handled
       if (error instanceof Error) {
-        // Handle known error instance
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Error fetching users:', error.message);
+        return res.status(500).json({ success: false, message: error.message });
       } else {
-        // Handle unknown error (fallback)
-        res.status(500).json({ success: false, message: 'An unknown error occurred' });
+        console.error('Unknown error occurred:', error);
+        return res.status(500).json({ success: false, message: 'An unknown error occurred' });
       }
     }
   } else {
-    // Handle requests that are not GET with a 405 Method Not Allowed
-    res.status(405).json({ success: false, message: 'Method not allowed' });
+    // Handle non-GET requests
+    return res.status(405).json({ success: false, message: 'Method Not Allowed' });
   }
 }

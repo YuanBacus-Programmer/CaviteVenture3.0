@@ -4,22 +4,26 @@ import fs from 'fs';
 import connectDB from '@/utils/connectDB';
 import User from '@/model/User';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import Cors from 'cors'; // Use CORS for handling cross-origin requests
+import Cors from 'cors';
 
-// Initialize the CORS middleware
+// Initialize CORS
 const cors = Cors({
   methods: ['POST'], // Only allow POST method
-  origin: '*', // Replace '*' with your frontend domain for security in production
+  origin: '*', // Replace '*' with your frontend domain for security
 });
 
-// Helper method to apply CORS middleware with typed function
-function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: (req: NextApiRequest, res: NextApiResponse, result: (result: unknown) => void) => void) {
+// Apply CORS middleware with correct types
+function runMiddleware(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  fn: (req: Cors.CorsRequest, res: NextApiResponse, next: (err?: unknown) => void) => void // Explicit typing for next and err
+): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     fn(req, res, (result: unknown) => {
       if (result instanceof Error) {
         return reject(result);
       }
-      return resolve();
+      resolve();
     });
   });
 }
@@ -27,18 +31,18 @@ function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: (req: Next
 // Disable body parsing to allow formidable to handle file uploads
 export const config = {
   api: {
-    bodyParser: false, // Disable body parsing to handle file uploads
+    bodyParser: false,
   },
 };
 
 // Ensure MongoDB connection
 connectDB();
 
-// Maximum file size for uploads (2MB)
+// Max file size for uploads (2MB)
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Apply CORS middleware
+  // Apply CORS
   await runMiddleware(req, res, cors);
 
   if (req.method !== 'POST') {
@@ -46,13 +50,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Setup formidable to handle file uploads
+    // Setup formidable for file upload parsing
     const form = formidable({
-      keepExtensions: true,
-      maxFileSize: MAX_FILE_SIZE,
-      filter: ({ mimetype }: Part) => {
-        // Return only boolean instead of boolean | string | null
-        return !!(mimetype && mimetype.includes('image'));
+      keepExtensions: true, // Keep file extension
+      maxFileSize: MAX_FILE_SIZE, // Limit file size to 2MB
+      filter: ({ mimetype }: Part): boolean => {
+        return !!(mimetype && mimetype.includes('image')); // Ensure only boolean is returned
       },
     });
 
@@ -69,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Parse the form data
     const { fields, files } = await parseForm();
 
-    // Extract and verify the token
+    // Ensure token is provided
     const token = fields.token?.toString();
     if (!token) {
       return res.status(400).json({ success: false, message: 'No token provided' });
@@ -77,16 +80,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      return res.status(500).json({ success: false, message: 'JWT secret not configured' });
+      return res.status(500).json({ success: false, message: 'JWT secret is not defined' });
     }
 
-    // Decode and verify JWT
+    // Verify the token
     let decoded: JwtPayload & { userId?: string };
     try {
       decoded = jwt.verify(token, jwtSecret) as JwtPayload & { userId?: string };
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+      return res.status(401).json({ success: false, message: 'Invalid token' });
     }
 
     const { userId } = decoded;
@@ -94,15 +97,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ success: false, message: 'Invalid token' });
     }
 
-    // Find user by ID
+    // Find the user by ID
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Handle file upload, ensuring the correct type for file
-    const file = Array.isArray(files.profilePicture) ? files.profilePicture[0] : (files.profilePicture as File | undefined);
-
+    // Handle the file upload
+    const file = Array.isArray(files.profilePicture) ? files.profilePicture[0] : (files.profilePicture as unknown as File);
     if (!file) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
@@ -126,14 +128,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await user.save();
 
     // Return success response
-    return res.status(200).json({ success: true, message: 'Profile picture updated successfully' });
+    return res.status(200).json({ success: true, message: 'Profile picture updated successfully!' });
   } catch (error) {
-    // Log and handle error
-    if (error instanceof Error) {
-      console.error('Error during file upload:', error.message);
-    } else {
-      console.error('Unknown error during file upload:', error);
-    }
+    console.error('Error during file upload:', error);
     return res.status(500).json({ success: false, message: 'Server error during file upload' });
   }
 }
