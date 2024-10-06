@@ -4,6 +4,7 @@ import crypto from 'crypto';
 
 // Define an interface representing a User document
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId; // Explicitly set the type for _id
   updatedAt: Date;
   createdAt: Date;
   firstName: string;
@@ -17,9 +18,9 @@ export interface IUser extends Document {
   verificationCodeExpires?: Date;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
-  gender?: 'male' | 'female' | 'other'; // New field
-  location?: string; // New field
-  birthday?: Date; // New field
+  gender?: 'male' | 'female' | 'other'; // Optional new field
+  location?: string; // Optional new field
+  birthday?: Date; // Optional new field
   matchPassword: (enteredPassword: string) => Promise<boolean>;
   generateVerificationCode: () => string;
   generateResetPasswordToken: () => string;
@@ -36,12 +37,12 @@ const userSchema = new Schema<IUser>(
     isVerified: { type: Boolean, default: false },
     profilePicture: { type: String, default: '/placeholder-user.jpg' },
     verificationCode: { type: String, default: null },
-    verificationCodeExpires: { type: Date },
-    resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },
-    gender: { type: String, enum: ['male', 'female', 'other'] }, // New field
-    location: { type: String }, // New field
-    birthday: { type: Date }, // New field
+    verificationCodeExpires: { type: Date, default: null },
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
+    gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' }, // Optional with default
+    location: { type: String, default: '' }, // Optional with default empty string
+    birthday: { type: Date }, // Optional
   },
   { timestamps: true }
 );

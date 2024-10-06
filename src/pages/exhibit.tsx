@@ -1,9 +1,10 @@
 import { GetServerSidePropsContext } from 'next';
 import { requireAuth } from '../utils/authMiddleware';
 import Navbar from '@/components/Navbar/Navbar';
-import { useUser } from '@/context/UserContext'; // Import the UserContext hook
+import { useUser } from '@/context/UserContext';
 import { useEffect } from 'react';
-import Exhibit1 from '@/components/Exhibit/Exhibit'
+import Exhibit1 from '@/components/Exhibit/Exhibit';
+import Head from 'next/head'; // For SEO and metadata
 
 interface User {
   firstName: string;
@@ -25,17 +26,33 @@ export default function Exhibit({ user }: ExhibitProps) {
   }, [user, setUser]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
-      {/* Navbar will get the user from UserContext */}
-      <Navbar />
-      <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <Exhibit1/>
-      </main>
-    </div>
+    <>
+      <Head>
+        <title>Exhibit | Exhibit1</title>
+        <meta name="description" content="Exhibit1 details and management page." />
+      </Head>
+      <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
+        <Navbar />
+        <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <Exhibit1 />
+        </main>
+      </div>
+    </>
   );
 }
 
 // Ensure only authenticated users can access this page
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
-  return requireAuth(ctx);
+  try {
+    const authResult = await requireAuth(ctx); // Securely authenticate the user
+    return authResult;
+  } catch (error) {
+    console.error('Authentication error:', error); // Log authentication errors
+    return {
+      redirect: {
+        destination: '/login', // Redirect to login if authentication fails
+        permanent: false,
+      },
+    };
+  }
 };
