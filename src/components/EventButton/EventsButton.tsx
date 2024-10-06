@@ -12,7 +12,7 @@ const EventsButton = () => {
 
   const handleContinue = () => {
     setIsModalOpen(false);
-    router.push("/Signup");
+    router.push("/signup");
   };
 
   return (
