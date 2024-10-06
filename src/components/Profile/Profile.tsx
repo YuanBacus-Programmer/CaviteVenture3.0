@@ -86,62 +86,58 @@ export default function Profile() {
       formData.append('profilePicture', file);
   
       const token = localStorage.getItem('token');
-      if (!token) {
-        setToast({ show: true, message: 'Authentication failed. Please log in.', type: 'error' });
-        return;
-      }
-  
-      formData.append('token', token);
+      formData.append('token', token || '');
   
       setIsUploading(true);
-  
       try {
-        const uploadUrl = process.env.NEXT_PUBLIC_API_URL + '/api/upload';
-  
-        const response = await fetch(uploadUrl, {
+        const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
   
-        const data = await response.json();
+        // Ensure the response is valid JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
   
-        if (response.ok) {
-          const newProfilePicture = data.imageUrl;
-          setUser((prevUser) => ({ ...prevUser, profilePicture: newProfilePicture }));
+          if (response.ok) {
+            const newProfilePicture = data.imageUrl;
+            setUser((prevUser) => ({ ...prevUser, profilePicture: newProfilePicture }));
   
-          const updateResponse = await fetch('/api/user/update', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              profilePicture: newProfilePicture,
-            }),
-          });
+            // Update the user profile with the new image URL
+            await fetch('/api/user/update', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                token,
+                profilePicture: newProfilePicture, // Save image URL in the database
+              }),
+            });
   
-          if (updateResponse.ok) {
             setToast({ show: true, message: 'Profile picture updated successfully!', type: 'success' });
           } else {
-            throw new Error('Failed to update user profile');
+            setToast({ show: true, message: data.message || 'Failed to upload image.', type: 'error' });
           }
         } else {
-          throw new Error(data.message || 'Failed to upload image');
+          throw new Error('Unexpected response format (not JSON).');
         }
       } catch (error) {
+        // Type narrowing: Check if the error is an instance of Error
         if (error instanceof Error) {
           console.error('Error uploading profile picture:', error.message);
           setToast({ show: true, message: error.message || 'Failed to upload image.', type: 'error' });
         } else {
-          console.error('Unexpected error:', error);
-          setToast({ show: true, message: 'An unexpected error occurred.', type: 'error' });
+          // Handle non-Error exceptions (just in case)
+          console.error('Unknown error:', error);
+          setToast({ show: true, message: 'An unknown error occurred.', type: 'error' });
         }
       } finally {
         setIsUploading(false);
       }
     }
   };
-  
   
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
