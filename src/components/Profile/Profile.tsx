@@ -5,9 +5,9 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUpload } from 'react-icons/fi';
 import { useRouter } from 'next/router';
-import Navbar from '@/components/Navbar/Navbar';
+import Navbar from '@/components/Navbar/Navbar'; // Navbar doesn't need 'user' prop
 import { Toast } from '@/components/Toast/Toast';
-import {jwtDecode} from 'jwt-decode'; // Corrected import
+import { jwtDecode } from 'jwt-decode'; // Correct default import
 
 interface User {
   firstName: string;
@@ -40,7 +40,7 @@ export default function Profile() {
     lastName: '',
     email: '',
     role: '',
-    profilePicture: '/placeholder-user.jpg', // Default image
+    profilePicture: '/placeholder-user.jpg', // Default image when none is uploaded
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,41 +55,25 @@ export default function Profile() {
         console.error('No token found');
         return;
       }
-  
-      const decoded: DecodedToken = jwtDecode(token);
+
+      const decoded: DecodedToken = jwtDecode(token); // Correct usage
       if (!decoded.userId) {
         console.error('Invalid token: userId not found');
         return;
       }
-  
+
       const response = await fetch(`/api/user/${decoded.userId}`);
-  
-      // Log response and check if it's HTML instead of JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text(); // Get response as text
-        console.error('Unexpected response format:', text);
-        throw new Error(`Expected JSON, received ${contentType}`);
-      }
-  
-      // Parse the JSON response
       const data = await response.json();
+
       if (data.success) {
         setUser(data.data);
       } else {
-        console.error('Error fetching user:', data.message);
+        console.error('Error:', data.message);
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('Error fetching user:', error.message);
-        setToast({ show: true, message: 'Error fetching user: ' + error.message, type: 'error' });
-      } else {
-        console.error('Unknown error fetching user.');
-        setToast({ show: true, message: 'Unknown error fetching user.', type: 'error' });
-      }
+      console.error('Error fetching user:', error);
     }
   };
-  
 
   useEffect(() => {
     fetchUserData();
@@ -110,42 +94,31 @@ export default function Profile() {
           method: 'POST',
           body: formData,
         });
+        const data = await response.json();
 
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
+        if (response.ok) {
+          const newProfilePicture = data.imageUrl;
+          setUser((prevUser) => ({ ...prevUser, profilePicture: newProfilePicture }));
 
-          if (response.ok) {
-            const newProfilePicture = data.imageUrl;
-            setUser((prevUser) => ({ ...prevUser, profilePicture: newProfilePicture }));
+          // Update the user profile with the new image URL
+          await fetch('/api/user/update', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token,
+              profilePicture: newProfilePicture, // Save image URL in the database
+            }),
+          });
 
-            // Update the user profile with the new image URL
-            await fetch('/api/user/update', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                token,
-                profilePicture: newProfilePicture, // Save image URL in the database
-              }),
-            });
-
-            setToast({ show: true, message: 'Profile picture updated successfully!', type: 'success' });
-          } else {
-            setToast({ show: true, message: data.message || 'Failed to upload image.', type: 'error' });
-          }
+          setToast({ show: true, message: 'Profile picture updated successfully!', type: 'success' });
         } else {
-          throw new Error('Unexpected response format (not JSON).');
+          setToast({ show: true, message: 'Failed to upload image.', type: 'error' });
         }
       } catch (error) {
-        if (error instanceof Error) {
-          console.error('Error uploading profile picture:', error.message);
-          setToast({ show: true, message: error.message || 'Failed to upload image.', type: 'error' });
-        } else {
-          console.error('Unknown error:', error);
-          setToast({ show: true, message: 'An unknown error occurred.', type: 'error' });
-        }
+        console.error('Error uploading profile picture:', error);
+        setToast({ show: true, message: 'Failed to upload image.', type: 'error' });
       } finally {
         setIsUploading(false);
       }
@@ -197,6 +170,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
+      {/* Navbar no longer requires 'user' prop */}
       <Navbar />
       <AnimatePresence>
         {toast.show && <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />}

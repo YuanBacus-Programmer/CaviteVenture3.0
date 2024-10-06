@@ -13,7 +13,7 @@ export interface IUser extends Document {
   password: string;
   role: 'user' | 'admin' | 'superadmin';
   isVerified: boolean;
-  profilePicture?: Buffer; // Store the profile picture as a binary buffer
+  profilePicture?: string;
   verificationCode?: string | null;
   verificationCodeExpires?: Date;
   resetPasswordToken?: string;
@@ -35,50 +35,49 @@ const userSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role: { type: String, default: 'user', enum: ['user', 'admin', 'superadmin'] },
     isVerified: { type: Boolean, default: false },
-    profilePicture: { type: Buffer, default: null }, // Store profile picture as binary data (Buffer)
+    profilePicture: { type: String, default: '/placeholder-user.jpg' },
     verificationCode: { type: String, default: null },
     verificationCodeExpires: { type: Date, default: null },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
-    gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' }, // Optional gender field
-    location: { type: String, default: '' }, // Optional location field with default empty string
-    birthday: { type: Date }, // Optional birthday field
+    gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' }, // Optional with default
+    location: { type: String, default: '' }, // Optional with default empty string
+    birthday: { type: Date }, // Optional
   },
-  { timestamps: true } // Enable createdAt and updatedAt timestamps
+  { timestamps: true }
 );
 
 // Pre-save hook to hash the password before saving the user
 userSchema.pre<IUser>('save', async function (next) {
-  // Only hash the password if it's been modified or is new
   if (!this.isModified('password')) return next();
 
   try {
     const saltRounds = 10;
-    this.password = await bcrypt.hash(this.password, saltRounds); // Hash the password with bcrypt
+    this.password = await bcrypt.hash(this.password, saltRounds);
     next();
   } catch (error) {
-    next(error as mongoose.CallbackError); // Pass the error to the next middleware
+    next(error as mongoose.CallbackError);
   }
 });
 
 // Method to compare hashed passwords
 userSchema.methods.matchPassword = async function (enteredPassword: string): Promise<boolean> {
-  return await bcrypt.compare(enteredPassword, this.password); // Compare the entered password with the stored hash
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
 // Method to generate and set the verification code
 userSchema.methods.generateVerificationCode = function (): string {
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit code
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
   this.verificationCode = verificationCode;
-  this.verificationCodeExpires = new Date(Date.now() + 60 * 60 * 1000); // Set expiration for 1 hour
+  this.verificationCodeExpires = new Date(Date.now() + 60 * 60 * 1000); // Expires in 1 hour
   return verificationCode;
 };
 
 // Method to generate and set the password reset token
 userSchema.methods.generateResetPasswordToken = function (): string {
   const resetToken = crypto.randomBytes(20).toString('hex'); // Generate random token
-  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex'); // Hash the token
-  this.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // Set expiration for 10 minutes
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex'); // Hash token
+  this.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
   return resetToken;
 };
 
