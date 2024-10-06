@@ -5,9 +5,9 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUpload } from 'react-icons/fi';
 import { useRouter } from 'next/router';
-import Navbar from '@/components/Navbar/Navbar'; // Navbar doesn't need 'user' prop
+import Navbar from '@/components/Navbar/Navbar';
 import { Toast } from '@/components/Toast/Toast';
-import { jwtDecode } from 'jwt-decode'; // Correct default import
+import {jwtDecode} from 'jwt-decode'; // Corrected import
 
 interface User {
   firstName: string;
@@ -40,7 +40,7 @@ export default function Profile() {
     lastName: '',
     email: '',
     role: '',
-    profilePicture: '/placeholder-user.jpg', // Default image when none is uploaded
+    profilePicture: '/placeholder-user.jpg', // Default image
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +56,7 @@ export default function Profile() {
         return;
       }
 
-      const decoded: DecodedToken = jwtDecode(token); // Correct usage
+      const decoded: DecodedToken = jwtDecode(token);
       if (!decoded.userId) {
         console.error('Invalid token: userId not found');
         return;
@@ -84,26 +84,25 @@ export default function Profile() {
       const file = e.target.files[0];
       const formData = new FormData();
       formData.append('profilePicture', file);
-  
+
       const token = localStorage.getItem('token');
       formData.append('token', token || '');
-  
+
       setIsUploading(true);
       try {
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
-  
-        // Ensure the response is valid JSON
+
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
           const data = await response.json();
-  
+
           if (response.ok) {
             const newProfilePicture = data.imageUrl;
             setUser((prevUser) => ({ ...prevUser, profilePicture: newProfilePicture }));
-  
+
             // Update the user profile with the new image URL
             await fetch('/api/user/update', {
               method: 'PUT',
@@ -115,7 +114,7 @@ export default function Profile() {
                 profilePicture: newProfilePicture, // Save image URL in the database
               }),
             });
-  
+
             setToast({ show: true, message: 'Profile picture updated successfully!', type: 'success' });
           } else {
             setToast({ show: true, message: data.message || 'Failed to upload image.', type: 'error' });
@@ -124,12 +123,10 @@ export default function Profile() {
           throw new Error('Unexpected response format (not JSON).');
         }
       } catch (error) {
-        // Type narrowing: Check if the error is an instance of Error
         if (error instanceof Error) {
           console.error('Error uploading profile picture:', error.message);
           setToast({ show: true, message: error.message || 'Failed to upload image.', type: 'error' });
         } else {
-          // Handle non-Error exceptions (just in case)
           console.error('Unknown error:', error);
           setToast({ show: true, message: 'An unknown error occurred.', type: 'error' });
         }
@@ -138,7 +135,6 @@ export default function Profile() {
       }
     }
   };
-  
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -185,7 +181,6 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
-      {/* Navbar no longer requires 'user' prop */}
       <Navbar />
       <AnimatePresence>
         {toast.show && <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />}
