@@ -12,20 +12,13 @@ import { DecodedToken, IUser, ToastState } from '@/types'; // Corrected imports
 
 export default function Profile() {
   const router = useRouter();
-  const [user, setUser] = useState<IUser>({
-    _id: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    role: '',
-    profilePicture: '/placeholder-user.jpg',
-    isVerified: false,
-  });
+  const [user, setUser] = useState<IUser | null>(null); // Set initial state to `null`
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Introduce a loading state
   const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -52,19 +45,21 @@ export default function Profile() {
 
       const data = await response.json();
       if (data.success) {
-        setUser(data.data);
+        setUser(data.data); // Set user data
       } else {
         throw new Error(data.message || 'Error fetching user data');
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
       router.push('/signin');
+    } finally {
+      setIsLoading(false); // Data has been fetched, stop loading
     }
   };
 
   useEffect(() => {
     fetchUserData();
-  }, []);
+  }, [fetchUserData]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -94,7 +89,7 @@ export default function Profile() {
         const data = await response.json();
 
         if (data.imageUrl) {
-          setUser((prevUser: IUser) => ({ ...prevUser, profilePicture: data.imageUrl }));
+          setUser((prevUser) => ({ ...prevUser!, profilePicture: data.imageUrl })); // Handle user state
 
           await fetch('/api/user/update', {
             method: 'PUT',
@@ -160,13 +155,25 @@ export default function Profile() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    setUser({ firstName: '', lastName: '', email: '', role: '', profilePicture: '/placeholder-user.jpg', _id: '', isVerified: false });
+    setUser(null); // Reset user state
     setToast({ show: true, message: 'Logged out successfully!', type: 'success' });
 
     setTimeout(() => {
       router.push('/signin');
     }, 1500);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="spinner">Loading...</div> {/* You can add a spinner or loading indicator */}
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <div>No user data found.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">

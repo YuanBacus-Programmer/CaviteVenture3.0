@@ -32,12 +32,11 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 };
 
 // Main Profile component
-export default function Profile({ user }: ProfileProps) {
+export default function Profile({ }: ProfileProps) {
   return (
     <>
       <Head>
         <title>Profile Page</title>
-        <meta name="description" content={`${user.firstName}'s profile page`} />
       </Head>
       <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
         <Navbar />
