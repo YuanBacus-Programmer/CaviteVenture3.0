@@ -4,76 +4,77 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUpload } from 'react-icons/fi';
-import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar/Navbar';
+import { useRouter } from 'next/router';
+import Navbar from '@/components/Navbar/Navbar'; // Navbar doesn't need 'user' prop
 import { Toast } from '@/components/Toast/Toast';
-import { jwtDecode } from 'jwt-decode'; // Correct import for named export
-import { DecodedToken, IUser, ToastState } from '@/types'; // Corrected imports
+import { jwtDecode } from 'jwt-decode'; // Correct default import
+
+interface User {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  profilePicture?: string;
+}
+
+interface DecodedToken {
+  userId: string;
+  email: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
+
+type ToastType = 'success' | 'error';
+
+interface ToastState {
+  show: boolean;
+  message: string;
+  type: ToastType;
+}
 
 export default function Profile() {
   const router = useRouter();
-  const [user, setUser] = useState<IUser | null>(null); // Set initial state to `null`
+  const [user, setUser] = useState<User>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: '',
+    profilePicture: '/placeholder-user.jpg', // Default image when none is uploaded
+  });
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Introduce a loading state
+  const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', type: 'success' });
 
-  // Fetch user data from server
+  // Fetch user data from API
   const fetchUserData = async () => {
     try {
-      // Debugging token retrieval in production
       const token = localStorage.getItem('token');
       if (!token) {
         console.error('No token found');
-        router.push('/signin');
         return;
       }
-  
-      // Debug log the token and decoded data
-      console.log('Token:', token);
-  
-      const decoded: DecodedToken = jwtDecode(token);
+
+      const decoded: DecodedToken = jwtDecode(token); // Correct usage
       if (!decoded.userId) {
         console.error('Invalid token: userId not found');
-        router.push('/signin');
         return;
       }
-  
-      console.log('Decoded userId:', decoded.userId);
-  
-      // Debug the API endpoint being used
-      const apiUrl = `/api/user/${decoded.userId}`;
-      console.log('API URL:', apiUrl);
-  
-      const response = await fetch(apiUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-  
-      // Log the status of the API response
-      console.log('API response status:', response.status);
-  
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data');
-      }
-  
+
+      const response = await fetch(`/api/user/${decoded.userId}`);
       const data = await response.json();
-      console.log('API response data:', data);
-  
+
       if (data.success) {
-        setUser(data.data); // Set user data
+        setUser(data.data);
       } else {
-        throw new Error(data.message || 'Error fetching user data');
+        console.error('Error:', data.message);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      router.push('/signin');
-    } finally {
-      setIsLoading(false); // Data has been fetched, stop loading
+      console.error('Error fetching user:', error);
     }
   };
-  
 
-  // Fetch user data on mount
   useEffect(() => {
     fetchUserData();
   }, []);
@@ -85,41 +86,35 @@ export default function Profile() {
       formData.append('profilePicture', file);
 
       const token = localStorage.getItem('token');
-      if (!token) {
-        setToast({ show: true, message: 'Authentication error. Please log in again.', type: 'error' });
-        return;
-      }
+      formData.append('token', token || '');
 
       setIsUploading(true);
-
       try {
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
-          headers: { Authorization: `Bearer ${token}` },
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to upload image');
-        }
-
         const data = await response.json();
 
-        if (data.imageUrl) {
-          setUser((prevUser) => ({ ...prevUser!, profilePicture: data.imageUrl })); // Handle user state
+        if (response.ok) {
+          const newProfilePicture = data.imageUrl;
+          setUser((prevUser) => ({ ...prevUser, profilePicture: newProfilePicture }));
 
+          // Update the user profile with the new image URL
           await fetch('/api/user/update', {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ profilePicture: data.imageUrl }),
+            body: JSON.stringify({
+              token,
+              profilePicture: newProfilePicture, // Save image URL in the database
+            }),
           });
 
           setToast({ show: true, message: 'Profile picture updated successfully!', type: 'success' });
         } else {
-          throw new Error('Image URL not received');
+          setToast({ show: true, message: 'Failed to upload image.', type: 'error' });
         }
       } catch (error) {
         console.error('Error uploading profile picture:', error);
@@ -133,34 +128,28 @@ export default function Profile() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      setToast({ show: true, message: 'Authentication error. Please log in again.', type: 'error' });
-      setIsLoading(false);
-      return;
-    }
-
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/user/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(user),
+        body: JSON.stringify({
+          token,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          profilePicture: user.profilePicture, // Ensure profilePicture is saved on update
+        }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
 
       const data = await response.json();
       if (data.success) {
         setIsEditing(false);
         setToast({ show: true, message: 'Profile updated successfully!', type: 'success' });
       } else {
-        throw new Error(data.message || 'Failed to update profile');
+        setToast({ show: true, message: 'Failed to update profile.', type: 'error' });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -171,8 +160,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    setUser(null); // Reset user state
+    setUser({ firstName: '', lastName: '', email: '', role: '', profilePicture: '/placeholder-user.jpg' });
     setToast({ show: true, message: 'Logged out successfully!', type: 'success' });
 
     setTimeout(() => {
@@ -180,20 +168,9 @@ export default function Profile() {
     }, 1500);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="spinner">Loading...</div> {/* You can add a spinner or loading indicator */}
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <div>No user data found.</div>;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
+      {/* Navbar no longer requires 'user' prop */}
       <Navbar />
       <AnimatePresence>
         {toast.show && <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />}
@@ -304,7 +281,6 @@ export default function Profile() {
                   />
                 </motion.div>
               </div>
-
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
