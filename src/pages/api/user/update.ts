@@ -66,8 +66,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'Invalid email format' });
     }
 
+    // Check if profilePicture is a base64 string and convert it to Buffer
     if (profilePicture && typeof profilePicture === 'string') {
-      user.profilePicture = profilePicture;
+      // If it's base64 encoded, remove the 'data:image/jpeg;base64,' prefix if it exists
+      const base64Data = profilePicture.replace(/^data:image\/\w+;base64,/, '');
+      user.profilePicture = Buffer.from(base64Data, 'base64'); // Convert base64 to Buffer
     }
 
     // Save the updated user profile to the database
