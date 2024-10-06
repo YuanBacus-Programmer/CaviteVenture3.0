@@ -164,7 +164,7 @@ export default function Profile() {
     setToast({ show: true, message: 'Logged out successfully!', type: 'success' });
 
     setTimeout(() => {
-      router.push('/Signin');
+      router.push('/signin');
     }, 1500);
   };
 

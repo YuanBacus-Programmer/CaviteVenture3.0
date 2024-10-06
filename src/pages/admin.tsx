@@ -22,7 +22,7 @@ enum Page {
   UserManagement,
 }
 
-export default function AdminPage({ user }: AdminPageProps) {
+export default function AdminPage({ }: AdminPageProps) {
   const [selectedPage, setSelectedPage] = useState<Page>(Page.EventManagement);
 
   // Handler to update the selected page
@@ -34,9 +34,6 @@ export default function AdminPage({ user }: AdminPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
       <Navbar />
       <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Welcome to the Admin page, {user.firstName}!
-        </h1>
 
         <div className="mt-8 grid grid-cols-4 gap-6">
           {/* Sidebar */}

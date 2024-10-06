@@ -25,7 +25,7 @@ enum Page {
   AdminManagement
 }
 
-export default function SuperAdminPage({ user }: SuperAdminPageProps) {
+export default function SuperAdminPage({ }: SuperAdminPageProps) {
   const [selectedPage, setSelectedPage] = useState<Page>(Page.EventManagement);
 
   // Handler to update the selected page
@@ -37,9 +37,6 @@ export default function SuperAdminPage({ user }: SuperAdminPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
       <Navbar />
       <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Welcome to the SuperAdmin page, {user.firstName}!
-        </h1>
 
         <div className="mt-8 grid grid-cols-4 gap-6">
           {/* Sidebar */}
