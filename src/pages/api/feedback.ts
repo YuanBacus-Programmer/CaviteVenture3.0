@@ -10,6 +10,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'POST') {
       const { avatar, firstName, rating, thoughts, suggestions } = req.body;
 
+      // Log received data for debugging
+      console.log('Received data:', { avatar, firstName, rating, thoughts, suggestions });
+
       if (!avatar || !firstName || !rating || !thoughts || !suggestions) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
@@ -24,15 +27,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       await feedback.save();
       res.status(201).json({ message: 'Feedback saved successfully', feedback });
-
     } else if (req.method === 'GET') {
       const feedbacks = await Feedback.find().sort({ createdAt: -1 }).limit(10);
       res.status(200).json(feedbacks);
-
     } else {
       res.status(405).json({ message: 'Method Not Allowed' });
     }
   } catch (error) {
+    console.error('Error in POST /api/feedback:', error);
     if (error instanceof Error) {
       res.status(500).json({ message: 'Internal Server Error', error: error.message });
     } else {

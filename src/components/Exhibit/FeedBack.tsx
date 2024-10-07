@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Slider } from "@/components/Signup12/Ui/slider"
 import { Textarea } from "@/components/Signup12/Ui/textarea"
 import { Button } from "@/components/Signup12/Ui/Button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/Signup12/Ui/card"
-import { Loader2 } from "lucide-react"
+import { Loader2, CheckCircle } from "lucide-react"
 import { useToast } from "@/components/Signup12/Ui/use-toast"
 import { Toast, ToastProvider } from "@/components/Signup12/Ui/toast"
 
@@ -15,6 +15,7 @@ export default function FeedbackForm() {
   const [thoughts, setThoughts] = useState<string>('')
   const [suggestions, setSuggestions] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [showSuccessToast, setShowSuccessToast] = useState<boolean>(false)
   const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,10 +40,8 @@ export default function FeedbackForm() {
       });
 
       if (response.ok) {
-        toast({
-          title: 'Thank you for your feedback!',
-          description: 'We appreciate your input and will use it to improve our services.',
-        });
+        setShowSuccessToast(true)
+        setTimeout(() => setShowSuccessToast(false), 5000) // Hide toast after 5 seconds
 
         // Reset form
         setRating(5);
@@ -53,12 +52,16 @@ export default function FeedbackForm() {
         toast({
           title: 'Error',
           description: data.message || 'Something went wrong',
+          duration: 5000,
+          className: 'bg-red-500 text-white',
         });
       }
     } catch {
       toast({
         title: 'Error',
         description: 'Network error or server is unavailable',
+        duration: 5000,
+        className: 'bg-red-500 text-white',
       });
     } finally {
       setIsLoading(false);
@@ -147,6 +150,23 @@ export default function FeedbackForm() {
           </CardContent>
         </Card>
       </motion.div>
+      <AnimatePresence>
+        {showSuccessToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            className="fixed bottom-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg flex items-center space-x-2"
+          >
+            <CheckCircle className="w-6 h-6" />
+            <div>
+              <h3 className="font-bold">Thank you for your feedback!</h3>
+              <p>We appreciate your input and will use it to improve our services.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <Toast />
     </ToastProvider>
   )
