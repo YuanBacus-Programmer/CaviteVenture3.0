@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Slider } from "@/components/Signup12/Ui/slider"
 import { Textarea } from "@/components/Signup12/Ui/textarea"
 import { Button } from "@/components/Signup12/Ui/Button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/Signup12/Ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/Signup12/Ui/card"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/components/Signup12/Ui/use-toast"
 import { Toast, ToastProvider } from "@/components/Signup12/Ui/toast"
@@ -21,22 +21,48 @@ export default function FeedbackForm() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulating an API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    const userFeedback = {
+      avatar: 'https://example.com/user-avatar.png', // Replace with actual user avatar URL
+      firstName: 'John', // Replace with the user's first name dynamically if available
+      rating,
+      thoughts,
+      suggestions,
+    }
 
-    // Here you would typically send the data to your backend
-    console.log({ rating, thoughts, suggestions })
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userFeedback),
+      });
 
-    toast({
-      title: "Thank you for your feedback!",
-      description: "We appreciate your input and will use it to improve our services.",
-    })
+      if (response.ok) {
+        toast({
+          title: 'Thank you for your feedback!',
+          description: 'We appreciate your input and will use it to improve our services.',
+        });
 
-    // Reset form
-    setRating(5)
-    setThoughts('')
-    setSuggestions('')
-    setIsLoading(false)
+        // Reset form
+        setRating(5);
+        setThoughts('');
+        setSuggestions('');
+      } else {
+        const data = await response.json();
+        toast({
+          title: 'Error',
+          description: data.message || 'Something went wrong',
+        });
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Network error or server is unavailable',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -97,31 +123,28 @@ export default function FeedbackForm() {
                   className="w-full border-[#fae8b4] focus:ring-[#8B7E57] focus:border-[#8B7E57]"
                 />
               </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-[#fae8b4] text-[#8B7E57] hover:bg-[#8B7E57] hover:text-[#fae8b4] transition-colors duration-300"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center justify-center"
+                  >
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending Feedback...
+                  </motion.div>
+                ) : (
+                  'Submit Feedback'
+                )}
+              </Button>
             </form>
           </CardContent>
-          <CardFooter>
-            <Button 
-              type="submit" 
-              onClick={handleSubmit} 
-              className="w-full bg-[#fae8b4] text-[#8B7E57] hover:bg-[#8B7E57] hover:text-[#fae8b4] transition-colors duration-300"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center justify-center"
-                >
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending Feedback...
-                </motion.div>
-              ) : (
-                'Submit Feedback'
-              )}
-            </Button>
-          </CardFooter>
         </Card>
       </motion.div>
       <Toast />
