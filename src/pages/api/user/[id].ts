@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Log the error for production debugging
     console.error('Error fetching user:', error);
 
-    // Return a server error response
-    return res.status(500).json({ success: false, message: 'Server error' });
+    // Ensure the response is always JSON
+    return res.status(500).json({ success: false, message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 }

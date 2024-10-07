@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar as CalendarIcon, MapPin, Clock, Users } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Clock, Users, X } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 
@@ -20,6 +20,7 @@ interface Event {
 const PostEvent = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -36,6 +37,10 @@ const PostEvent = () => {
 
     fetchEvents();
   }, []);
+
+  const handleModalClose = () => {
+    setSelectedEvent(null);
+  };
 
   if (loading) {
     return <div className="text-[#5c4813] font-serif">Loading historical events...</div>;
@@ -78,7 +83,10 @@ const PostEvent = () => {
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-[#5c4813] bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <button className="bg-[#fae8b4] text-[#5c4813] px-4 py-2 rounded-full hover:bg-opacity-90 transition-colors duration-200 font-bold">
+                  <button
+                    onClick={() => setSelectedEvent(event)}
+                    className="bg-[#fae8b4] text-[#5c4813] px-4 py-2 rounded-full hover:bg-opacity-90 transition-colors duration-200 font-bold"
+                  >
                     Uncover History
                   </button>
                 </div>
@@ -107,6 +115,50 @@ const PostEvent = () => {
           ))}
         </AnimatePresence>
       </motion.div>
+
+      {/* Modal */}
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative"
+          >
+            <button
+              onClick={handleModalClose}
+              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="relative h-48 w-full rounded-lg overflow-hidden mb-4">
+              <Image
+                src={selectedEvent.image}
+                alt={selectedEvent.title}
+                width={800}
+                height={600}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">{selectedEvent.title}</h2>
+            <div className="flex items-center space-x-2 text-[#5c4813] mb-2">
+              <CalendarIcon className="h-4 w-4" />
+              <span>{format(new Date(selectedEvent.date), 'MMMM d, yyyy')}</span>
+            </div>
+            <div className="flex items-center space-x-2 text-[#5c4813] mb-2">
+              <MapPin className="h-4 w-4" />
+              <span>{selectedEvent.location}</span>
+            </div>
+            <p className="text-[#5c4813] mb-4">{selectedEvent.description}</p>
+            <button
+              onClick={handleModalClose}
+              className="bg-[#fae8b4] text-[#5c4813] px-4 py-2 rounded-full hover:bg-opacity-90 transition-colors duration-200 font-bold"
+            >
+              Close
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
