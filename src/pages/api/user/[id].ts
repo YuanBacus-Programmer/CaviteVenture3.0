@@ -8,10 +8,9 @@ connectDB();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Set cache control to prevent caching in production environments
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-    // Check if the request method is GET
+    // Only allow GET requests
     if (req.method !== 'GET') {
       return res.status(405).json({ success: false, message: 'Method not allowed' });
     }
@@ -23,15 +22,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ success: false, message: 'Invalid user ID format' });
     }
 
-    // Log the request for production debugging
-    console.log(`Fetching user data for ID: ${id}`);
-
     // Fetch the user from the database
     const user = await User.findById(id).lean().exec() as IUser | null;
 
-    // Check if the user exists
     if (!user) {
-      console.error(`User not found with ID: ${id}`);
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
@@ -39,22 +33,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       success: true,
       data: {
-        id: user._id.toString(), // Convert the ObjectId to string
+        id: user._id.toString(),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         role: user.role,
-        profilePicture: user.profilePicture || null, // Default null if not available
+        profilePicture: user.profilePicture || null,
         isVerified: user.isVerified,
-        createdAt: user.createdAt?.toISOString(), // Serialize dates to ISO string
+        createdAt: user.createdAt?.toISOString(),
         updatedAt: user.updatedAt?.toISOString(),
       },
     });
   } catch (error) {
-    // Log the error for production debugging
     console.error('Error fetching user:', error);
-
-    // Ensure the response is always JSON
     return res.status(500).json({ success: false, message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 }
