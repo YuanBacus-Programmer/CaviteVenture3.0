@@ -3,6 +3,7 @@ import { requireAuth } from '../utils/authMiddleware';
 import Navbar from '@/components/Navbar/Navbar';
 import Exhibit1 from '@/components/Exhibit/Exhibit';
 import Head from 'next/head';
+import FeedBack from '@/components/Exhibit/FeedBack';
 
 interface User {
   firstName: string;
@@ -43,6 +44,7 @@ export default function Exhibit({ }: ExhibitProps) {
         <Navbar />
         <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Exhibit1 />
+          <FeedBack/>
         </main>
       </div>
     </>

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { GetServerSideProps, GetServerSidePropsContext } from 'next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiMenu, FiX, FiCalendar, FiUsers, FiShield } from 'react-icons/fi'
+import { FiMenu, FiX, FiCalendar, FiUsers, FiShield, FiMessageSquare } from 'react-icons/fi'
 import { requireRole } from '@/utils/authMiddleware'
 import Navbar from '@/components/Navbar/Navbar'
 import EventManagement from '@/components/Superadmin/EventManagement/EventManagement'
 import UserManagement from '@/components/Superadmin/UserManagement/UserManagement'
 import AdminManagement from '@/components/Superadmin/AdminManagement/AdminManagement'
+import UserFeedback from '@/components/Superadmin/FeedBackDetail/UserFeedBack'
 
 interface User {
   firstName: string
@@ -23,12 +24,14 @@ enum Page {
   EventManagement,
   UserManagement,
   AdminManagement,
+  UserFeedback,
 }
 
 const pageConfig = [
   { page: Page.EventManagement, title: 'Event Management', icon: FiCalendar },
   { page: Page.UserManagement, title: 'User Management', icon: FiUsers },
   { page: Page.AdminManagement, title: 'Admin Management', icon: FiShield },
+  { page: Page.UserFeedback, title: 'User Feedback', icon: FiMessageSquare },
 ]
 
 export default function SuperAdminPage({}: SuperAdminPageProps) {
@@ -36,13 +39,11 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [windowWidth, setWindowWidth] = useState<number | null>(null)
 
-  // Handle page change
   const handlePageChange = (page: Page) => {
     setSelectedPage(page)
     setIsSidebarOpen(false)
   }
 
-  // Debounced window resize handler
   const handleResize = useCallback(() => {
     setWindowWidth(window.innerWidth)
   }, [])
@@ -52,7 +53,7 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
       let timeoutId: ReturnType<typeof setTimeout>
       return () => {
         clearTimeout(timeoutId)
-        timeoutId = setTimeout(handleResize, 200) // Debouncing resize for performance
+        timeoutId = setTimeout(handleResize, 200)
       }
     }
 
@@ -71,7 +72,6 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
       <main className="pt-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Mobile Sidebar Toggle */}
             <motion.button
               className="lg:hidden mb-4 p-2 bg-white rounded-md shadow-md"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -81,7 +81,6 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
               {isSidebarOpen ? <FiX size={24} /> : <FiMenu size={24} />}
             </motion.button>
 
-            {/* Sidebar */}
             <AnimatePresence>
               {(isSidebarOpen || (windowWidth !== null && windowWidth >= 1024)) && (
                 <motion.div
@@ -114,7 +113,6 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
               )}
             </AnimatePresence>
 
-            {/* Content */}
             <motion.div
               className="flex-grow bg-white shadow-md rounded-lg p-6"
               initial={{ opacity: 0, y: 20 }}
@@ -132,6 +130,7 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
                   {selectedPage === Page.EventManagement && <EventManagement />}
                   {selectedPage === Page.UserManagement && <UserManagement />}
                   {selectedPage === Page.AdminManagement && <AdminManagement />}
+                  {selectedPage === Page.UserFeedback && <UserFeedback />}
                 </motion.div>
               </AnimatePresence>
             </motion.div>
@@ -142,7 +141,6 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
   )
 }
 
-// Secure server-side rendering with role-based access
 export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSidePropsContext) => {
   return requireRole(ctx, 'superadmin')
 }
