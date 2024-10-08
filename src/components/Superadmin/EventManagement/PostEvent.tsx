@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar as CalendarIcon, MapPin, Clock, Users, X } from 'lucide-react';
+import { Calendar as CalendarIcon, MapPin, Clock, Users, X, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { useUser } from '@/context/UserContext'; // Assuming a UserContext for user roles
 
 interface Event {
   id: string;
@@ -21,6 +22,9 @@ const PostEvent = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<Event>>({});
+  const { user } = useUser(); // Fetch user from context
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -40,7 +44,80 @@ const PostEvent = () => {
 
   const handleModalClose = () => {
     setSelectedEvent(null);
+    setIsEditing(false);
+    setEditData({});
   };
+
+  const handleUpdate = (event: Event) => {
+    setIsEditing(true);
+    setEditData(event);
+  };
+
+  const handleSaveUpdate = async () => {
+    if (!editData.id) return;
+
+    try {
+      const response = await fetch(`/api/events/${editData.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(editData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const updatedEvent = await response.json();
+        setEvents((prevEvents) =>
+          prevEvents.map((event) => (event.id === editData.id ? updatedEvent.event : event))
+        );
+        handleModalClose();
+        alert('Event updated successfully.');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to update event:', errorData);
+        alert('Failed to update event. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating event:', error);
+      alert('Error updating event.');
+    }
+  };
+
+  const handleDelete = async (eventId: string) => {
+    if (!eventId || eventId.trim() === '') {
+      alert('Invalid event ID');
+      return;
+    }
+  
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'DELETE',
+      });
+  
+      if (response.ok) {
+        setEvents((prevEvents) => prevEvents.filter((event) => event.id !== eventId));
+        handleModalClose(); // Close the modal after successful deletion
+        alert('Event deleted successfully.');
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to delete event:', errorText);
+        alert('Failed to delete event. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      alert('Error deleting event.');
+    }
+  };
+  
+  const AdminButton = ({ onClick, icon, text }: { onClick: () => void; icon: React.ReactNode; text: string }) => (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-center bg-[#fae8b4] text-[#5c4813] px-4 py-2 rounded-full hover:bg-opacity-90 transition-colors duration-200 font-bold mr-2"
+    >
+      {icon}
+      <span className="ml-2">{text}</span>
+    </button>
+  );
 
   if (loading) {
     return <div className="text-[#5c4813] font-serif">Loading historical events...</div>;
@@ -110,13 +187,11 @@ const PostEvent = () => {
                   <span>{event.attendees} historical enthusiasts</span>
                 </div>
               </div>
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#f5d78e] to-[#fae8b4] opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
             </motion.div>
           ))}
         </AnimatePresence>
       </motion.div>
 
-      {/* Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <motion.div
@@ -150,12 +225,45 @@ const PostEvent = () => {
               <span>{selectedEvent.location}</span>
             </div>
             <p className="text-[#5c4813] mb-4">{selectedEvent.description}</p>
-            <button
-              onClick={handleModalClose}
-              className="bg-[#fae8b4] text-[#5c4813] px-4 py-2 rounded-full hover:bg-opacity-90 transition-colors duration-200 font-bold"
-            >
-              Close
-            </button>
+            <div className="flex justify-between items-center">
+              <button
+                onClick={handleModalClose}
+                className="bg-[#fae8b4] text-[#5c4813] px-4 py-2 rounded-full hover:bg-opacity-90 transition-colors duration-200 font-bold"
+              >
+                Close
+              </button>
+              {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                <div className="flex">
+                  {isEditing ? (
+                    <>
+                      <AdminButton
+                        onClick={handleSaveUpdate}
+                        icon={<Edit className="w-4 h-4" />}
+                        text="Save"
+                      />
+                      <AdminButton
+                        onClick={() => setIsEditing(false)}
+                        icon={<X className="w-4 h-4" />}
+                        text="Cancel"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <AdminButton
+                        onClick={() => handleUpdate(selectedEvent)}
+                        icon={<Edit className="w-4 h-4" />}
+                        text="Update"
+                      />
+                      <AdminButton
+                        onClick={() => handleDelete(selectedEvent.id)}
+                        icon={<Trash2 className="w-4 h-4" />}
+                        text="Delete"
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </motion.div>
         </div>
       )}
