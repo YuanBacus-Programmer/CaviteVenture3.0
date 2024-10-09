@@ -62,15 +62,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check if the password was recently changed (optional check)
-    if (
-      user.passwordLastChanged &&
-      user.passwordLastChanged > new Date(Date.now() - 24 * 60 * 60 * 1000)
-    ) {
-      console.log('Password recently changed for user:', sanitizedEmail);
-      return res.status(400).json({ message: 'Password recently changed. Please try again later.' });
-    }
-
     // Generate a JWT token for the authenticated user
     const token = jwt.sign(
       {
