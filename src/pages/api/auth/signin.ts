@@ -1,14 +1,28 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { setCookie } from 'nookies'; // Optionally use nookies to set cookies
+import { setCookie } from 'nookies';
+import { z } from 'zod';
 import connectDB from '@/utils/connectDB';
-import User from '@/model/User'; // Ensure the User model is correct
+import User from '@/model/User';
+import rateLimit from '@/utils/rateLimit';
+
+const signInSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
 
 type Data = {
   token?: string;
   message?: string;
+  errors?: z.ZodIssue[];
 };
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 requests per minute per IP
+  uniqueTokenPerInterval: 500,
+});
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   if (req.method !== 'POST') {
@@ -16,63 +30,76 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   try {
+    // Apply rate limiting
+    await limiter(req, res);
+
     // Connect to the database
     await connectDB();
-    console.log('MongoDB connected successfully.');
 
-    // Extract email and password from the request body and sanitize inputs
-    const { email, password } = req.body;
-    console.log('Incoming request data:', { email, password });
+    // Parse and validate request data
+    const { email, password } = signInSchema.parse(req.body);
+    const sanitizedEmail = email.toLowerCase().trim();
+    const sanitizedPassword = password.trim();
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+    console.log('Sign-in attempt for:', sanitizedEmail);
 
-    // Trim email and password to avoid accidental whitespaces
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
+    // Find the user by email
+    const user = await User.findOne({ email: sanitizedEmail });
 
-    // Find the user in the database by email
-    const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
-      console.log(`User not found with email: ${trimmedEmail}`);
+      console.log(`User not found for email: ${sanitizedEmail}`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Log the stored password hash for debugging purposes
-    console.log('Stored password hash:', user.password);
+    console.log(`Stored hash for user ${sanitizedEmail}: ${user.password}`);
 
-    // Compare the entered password with the stored hashed password using bcrypt
-    const isMatch = await bcrypt.compare(trimmedPassword, user.password); // Use bcrypt to compare password
+    // Compare the sanitized password with the stored hash
+    const isMatch = await bcrypt.compare(sanitizedPassword, user.password);
+    console.log('Is password match:', isMatch);
+
     if (!isMatch) {
-      console.log('Password does not match');
+      console.log('Password mismatch for user:', sanitizedEmail);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token upon successful login, include additional user info (email, role, firstName, lastName) in the payload
+    // Check if the password was recently changed (optional check)
+    if (
+      user.passwordLastChanged &&
+      user.passwordLastChanged > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    ) {
+      console.log('Password recently changed for user:', sanitizedEmail);
+      return res.status(400).json({ message: 'Password recently changed. Please try again later.' });
+    }
+
+    // Generate a JWT token for the authenticated user
     const token = jwt.sign(
-      { 
+      {
         userId: user._id,
         email: user.email,
         role: user.role,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
       },
-      process.env.JWT_SECRET!, // Ensure JWT_SECRET is set in environment variables
+      process.env.JWT_SECRET!,
       { expiresIn: '1h' }
     );
 
-    // Optionally: Set the JWT token in an HTTP-only cookie
+    // Set the JWT token as an HTTP-only cookie
     setCookie({ res }, 'token', token, {
       maxAge: 60 * 60, // 1 hour
-      httpOnly: true,  // Secure the cookie
-      path: '/',       // Allow the cookie to be available on all routes
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
     });
 
-    // Respond with the token in the JSON body (optional, you can remove this if only using cookies)
+    console.log(`Sign-in successful for user: ${sanitizedEmail}`);
     return res.status(200).json({ token });
-
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
+      return res.status(400).json({ message: 'Invalid input', errors: error.errors });
+    }
     console.error('Error during sign-in:', error);
     return res.status(500).json({ message: 'Server error' });
   }

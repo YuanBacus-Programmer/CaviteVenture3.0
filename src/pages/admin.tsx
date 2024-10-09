@@ -34,7 +34,6 @@ export default function AdminPage({ }: AdminPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-[#fff8e1] to-white">
       <Navbar />
       <main className="pt-24 max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-
         <div className="mt-8 grid grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="col-span-1 bg-white shadow-md rounded-lg p-4">

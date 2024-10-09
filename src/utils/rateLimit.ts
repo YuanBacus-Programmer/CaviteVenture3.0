@@ -1,33 +1,36 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { LRUCache } from 'lru-cache';
 
 type RateLimitOptions = {
-  windowMs: number;
-  max: number;
+  windowMs: number; // Time window in milliseconds
+  max: number; // Max number of requests allowed per window
+  uniqueTokenPerInterval?: number; // Optional: max unique tokens per interval (default is 500)
 };
 
-const rateLimitMap = new Map<string, { count: number; expires: number }>();
-
+// Create an LRU cache to store rate limit records
 export default function rateLimit(options: RateLimitOptions) {
-  const { windowMs, max } = options;
+  const { windowMs, max, uniqueTokenPerInterval = 500 } = options;
+
+  const tokenCache = new LRUCache<string, number>({
+    max: uniqueTokenPerInterval,
+    ttl: windowMs,
+  });
 
   return async (req: NextApiRequest, res: NextApiResponse) => {
-    const key = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-    const now = Date.now();
+    const token = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    const tokenString = Array.isArray(token) ? token[0] : token;
 
-    const record = rateLimitMap.get(key as string);
-    if (record) {
-      // If the limit has expired, reset it
-      if (record.expires < now) {
-        rateLimitMap.set(key as string, { count: 1, expires: now + windowMs });
-      } else {
-        record.count += 1;
-        if (record.count > max) {
-          res.setHeader('Retry-After', Math.ceil((record.expires - now) / 1000));
-          return res.status(429).json({ message: 'Too many requests, please try again later' });
-        }
-      }
-    } else {
-      rateLimitMap.set(key as string, { count: 1, expires: now + windowMs });
+    const tokenCount = tokenCache.get(tokenString) || 0;
+
+    if (tokenCount >= max) {
+      res.setHeader('Retry-After', Math.ceil(windowMs / 1000));
+      res.setHeader('X-RateLimit-Limit', max);
+      res.setHeader('X-RateLimit-Remaining', 0);
+      return res.status(429).json({ message: 'Rate limit exceeded' });
     }
+
+    tokenCache.set(tokenString, tokenCount + 1);
+    res.setHeader('X-RateLimit-Limit', max);
+    res.setHeader('X-RateLimit-Remaining', max - (tokenCount + 1));
   };
 }

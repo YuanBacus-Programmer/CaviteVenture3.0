@@ -31,6 +31,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
       if (response.ok) {
         toast.success('Verification code sent to your email')
         setShowVerificationModal(true)
+        onClose() // Close the forgot password modal
       } else {
         toast.error(data.message || 'Failed to send verification code')
       }
@@ -40,6 +41,11 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleVerificationClose = () => {
+    setShowVerificationModal(false)
+    setEmail('') // Reset email state
   }
 
   return (
@@ -85,7 +91,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
 
       <VerificationModal
         isOpen={showVerificationModal}
-        onClose={() => setShowVerificationModal(false)}
+        onClose={handleVerificationClose}
         email={email}
       />
     </>

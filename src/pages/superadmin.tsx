@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { GetServerSideProps, GetServerSidePropsContext } from 'next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiMenu, FiX, FiCalendar, FiUsers, FiShield, FiMessageSquare } from 'react-icons/fi'
+import { FiMenu, FiX, FiUsers, FiShield, FiMessageSquare } from 'react-icons/fi'
 import { requireRole } from '@/utils/authMiddleware'
 import Navbar from '@/components/Navbar/Navbar'
-import EventManagement from '@/components/Superadmin/EventManagement/EventManagement'
 import UserManagement from '@/components/Superadmin/UserManagement/UserManagement'
 import AdminManagement from '@/components/Superadmin/AdminManagement/AdminManagement'
 import UserFeedback from '@/components/Superadmin/FeedBackDetail/UserFeedBack'
@@ -21,21 +20,19 @@ interface SuperAdminPageProps {
 }
 
 enum Page {
-  EventManagement,
   UserManagement,
   AdminManagement,
   UserFeedback,
 }
 
 const pageConfig = [
-  { page: Page.EventManagement, title: 'Event Management', icon: FiCalendar },
   { page: Page.UserManagement, title: 'User Management', icon: FiUsers },
   { page: Page.AdminManagement, title: 'Admin Management', icon: FiShield },
   { page: Page.UserFeedback, title: 'User Feedback', icon: FiMessageSquare },
 ]
 
 export default function SuperAdminPage({}: SuperAdminPageProps) {
-  const [selectedPage, setSelectedPage] = useState<Page>(Page.EventManagement)
+  const [selectedPage, setSelectedPage] = useState<Page>(Page.UserManagement)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [windowWidth, setWindowWidth] = useState<number | null>(null)
 
@@ -127,7 +124,6 @@ export default function SuperAdminPage({}: SuperAdminPageProps) {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {selectedPage === Page.EventManagement && <EventManagement />}
                   {selectedPage === Page.UserManagement && <UserManagement />}
                   {selectedPage === Page.AdminManagement && <AdminManagement />}
                   {selectedPage === Page.UserFeedback && <UserFeedback />}

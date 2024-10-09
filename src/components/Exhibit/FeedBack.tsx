@@ -1,34 +1,42 @@
-'use client'
+// pages/FeedbackForm.tsx
+"use client";
 
-import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Slider } from "@/components/Signup12/Ui/slider"
-import { Textarea } from "@/components/Signup12/Ui/textarea"
-import { Button } from "@/components/Signup12/Ui/Button"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/Signup12/Ui/card"
-import { Loader2, CheckCircle } from "lucide-react"
-import { useToast } from "@/components/Signup12/Ui/use-toast"
-import { Toast, ToastProvider } from "@/components/Signup12/Ui/toast"
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Slider } from "@/components/Signup12/Ui/slider";
+import { Textarea } from "@/components/Signup12/Ui/textarea";
+import { Button } from "@/components/Signup12/Ui/Button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/Signup12/Ui/card";
+import { Loader2, CheckCircle } from "lucide-react";
+import { useToast } from "@/components/Signup12/Ui/use-toast";
+import { Toast, ToastProvider } from "@/components/Signup12/Ui/toast";
+import { useUser } from '@/context/UserContext';
 
 export default function FeedbackForm() {
-  const [rating, setRating] = useState<number>(5)
-  const [thoughts, setThoughts] = useState<string>('')
-  const [suggestions, setSuggestions] = useState<string>('')
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [showSuccessToast, setShowSuccessToast] = useState<boolean>(false)
-  const { toast } = useToast()
+  const [rating, setRating] = useState<number>(5);
+  const [thoughts, setThoughts] = useState<string>('');
+  const [suggestions, setSuggestions] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showSuccessToast, setShowSuccessToast] = useState<boolean>(false);
+  const { toast } = useToast();
+  const { user } = useUser();
+
+  // Return null to hide the component if the user is not authorized
+  if (!user || user.role !== 'user') {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     const userFeedback = {
-      avatar: 'https://example.com/user-avatar.png', // Replace with actual user avatar URL
-      firstName: 'John', // Replace with the user's first name dynamically if available
+      avatar: user.profilePicture || 'https://example.com/user-avatar.png',
+      firstName: user.firstName || 'John',
       rating,
       thoughts,
       suggestions,
-    }
+    };
 
     try {
       const response = await fetch('/api/feedback', {
@@ -40,8 +48,8 @@ export default function FeedbackForm() {
       });
 
       if (response.ok) {
-        setShowSuccessToast(true)
-        setTimeout(() => setShowSuccessToast(false), 5000) // Hide toast after 5 seconds
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 5000);
 
         // Reset form
         setRating(5);
@@ -66,7 +74,7 @@ export default function FeedbackForm() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
     <ToastProvider>
@@ -169,5 +177,5 @@ export default function FeedbackForm() {
       </AnimatePresence>
       <Toast />
     </ToastProvider>
-  )
+  );
 }

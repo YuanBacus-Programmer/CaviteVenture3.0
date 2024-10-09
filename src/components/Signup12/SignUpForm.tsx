@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CodeVerificationModal } from '@/components/Signup12/VerificationModal/CodeVerificationModal';
@@ -12,6 +13,7 @@ import { GoogleSignUpButton } from '@/components/Signup12/Google-Signup-Button';
 import Image from 'next/image';
 import Link from 'next/link';
 import Cog from '@/assets/HeroImages/cog.png';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function SignUp() {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
@@ -25,13 +27,18 @@ export default function SignUp() {
   const [passwordError, setPasswordError] = useState<string>('');
   const [verificationModalOpen, setVerificationModalOpen] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showReenterPassword, setShowReenterPassword] = useState<boolean>(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (password !== reenterPassword) {
       setPasswordError("Passwords do not match");
+      setIsLoading(false);
       return;
     } else {
       setPasswordError("");
@@ -66,6 +73,8 @@ export default function SignUp() {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setFormError('An error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -226,28 +235,42 @@ export default function SignUp() {
             </Select>
           </div>
 
-          <div>
+          <div className="relative">
             <Label htmlFor="password" className="text-gray-700">Password</Label>
             <Input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
-              className="bg-white border-gray-300"
+              className="bg-white border-gray-300 pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
 
-          <div>
+          <div className="relative">
             <Label htmlFor="reenterPassword" className="text-gray-700">Re-enter Password</Label>
             <Input
               id="reenterPassword"
-              type="password"
+              type={showReenterPassword ? "text" : "password"}
               required
-              className="bg-white border-gray-300"
+              className="bg-white border-gray-300 pr-10"
               value={reenterPassword}
               onChange={(e) => setReenterPassword(e.target.value)}
             />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-500"
+              onClick={() => setShowReenterPassword(!showReenterPassword)}
+            >
+              {showReenterPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
           </div>
 
           {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
@@ -267,8 +290,12 @@ export default function SignUp() {
             </Label>
           </div>
 
-          <Button type="submit" className="w-full bg-[#fae8b4] text-gray-800 hover:bg-[#f5d78e]">
-            Sign Up
+          <Button 
+            type="submit" 
+            className="w-full bg-[#fae8b4] text-gray-800 hover:bg-[#f5d78e]"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing Up...' : 'Sign Up'}
           </Button>
 
           <div className="relative">

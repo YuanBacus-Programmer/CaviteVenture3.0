@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Input } from "@/components/Signup12/Ui/Input"
 import { Button } from "@/components/Signup12/Ui/Button"
 import { toast } from 'react-hot-toast'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
 
 interface ResetPasswordModalProps {
   isOpen: boolean
@@ -15,6 +16,8 @@ export default function ResetPasswordModal({ isOpen, onClose, email, verificatio
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -36,7 +39,7 @@ export default function ResetPasswordModal({ isOpen, onClose, email, verificatio
 
       if (response.ok) {
         toast.success('Password reset successfully')
-        onClose()
+        onClose() // Close the modal on successful password reset
       } else {
         toast.error(data.message || 'Failed to reset password')
       }
@@ -45,6 +48,14 @@ export default function ResetPasswordModal({ isOpen, onClose, email, verificatio
       toast.error('An error occurred. Please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const togglePasswordVisibility = (field: 'new' | 'confirm') => {
+    if (field === 'new') {
+      setShowNewPassword(!showNewPassword)
+    } else {
+      setShowConfirmPassword(!showConfirmPassword)
     }
   }
 
@@ -65,23 +76,47 @@ export default function ResetPasswordModal({ isOpen, onClose, email, verificatio
           >
             <h2 className="text-2xl font-bold mb-4">Reset Password</h2>
             <form onSubmit={handleSubmit}>
-              <div className="mb-4">
+              <div className="mb-4 relative">
                 <Input
-                  type="password"
+                  type={showNewPassword ? "text" : "password"}
                   placeholder="New password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
+                  className="pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('new')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                >
+                  {showNewPassword ? (
+                    <EyeOffIcon className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-gray-500" />
+                  )}
+                </button>
               </div>
-              <div className="mb-4">
+              <div className="mb-4 relative">
                 <Input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  className="pr-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('confirm')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOffIcon className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-gray-500" />
+                  )}
+                </button>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button type="button" onClick={onClose} variant="outline">

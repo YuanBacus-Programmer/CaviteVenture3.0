@@ -4,7 +4,7 @@ import crypto from 'crypto';
 
 // Define an interface representing a User document
 export interface IUser extends Document {
-  _id: mongoose.Types.ObjectId; // Explicitly set the type for _id
+  _id: mongoose.Types.ObjectId;
   updatedAt: Date;
   createdAt: Date;
   firstName: string;
@@ -15,34 +15,34 @@ export interface IUser extends Document {
   isVerified: boolean;
   profilePicture?: string;
   verificationCode?: string | null;
-  verificationCodeExpires?: Date;
-  resetPasswordToken?: string;
-  resetPasswordExpires?: Date;
-  gender?: 'male' | 'female' | 'other'; // Optional new field
-  location?: string; // Optional new field
-  birthday?: Date; // Optional new field
+  verificationCodeExpires?: Date | null;
+  resetPasswordToken?: string | null;
+  resetPasswordExpires?: Date | null;
+  passwordLastChanged?: Date; // Make sure this field is included
   matchPassword: (enteredPassword: string) => Promise<boolean>;
   generateVerificationCode: () => string;
   generateResetPasswordToken: () => string;
 }
 
-// Define the user schema
+// Define the user schema with timestamps
 const userSchema = new Schema<IUser>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    role: { type: String, default: 'user', enum: ['user', 'admin', 'superadmin'] },
+    role: {
+      type: String,
+      default: 'user',
+      enum: ['user', 'admin', 'superadmin'],
+    },
     isVerified: { type: Boolean, default: false },
     profilePicture: { type: String, default: '/placeholder-user.jpg' },
     verificationCode: { type: String, default: null },
     verificationCodeExpires: { type: Date, default: null },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
-    gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' }, // Optional with default
-    location: { type: String, default: '' }, // Optional with default empty string
-    birthday: { type: Date }, // Optional
+    passwordLastChanged: { type: Date }, // Include this field in the schema
   },
   { timestamps: true }
 );
@@ -54,29 +54,30 @@ userSchema.pre<IUser>('save', async function (next) {
   try {
     const saltRounds = 10;
     this.password = await bcrypt.hash(this.password, saltRounds);
+    this.passwordLastChanged = new Date(); // Update passwordLastChanged whenever the password changes
     next();
   } catch (error) {
     next(error as mongoose.CallbackError);
   }
 });
 
-// Method to compare hashed passwords
-userSchema.methods.matchPassword = async function (enteredPassword: string): Promise<boolean> {
-  return await bcrypt.compare(enteredPassword, this.password);
+// Method to compare entered password with the hashed password
+userSchema.methods.matchPassword = function (enteredPassword: string): Promise<boolean> {
+  return bcrypt.compare(enteredPassword, this.password);
 };
 
-// Method to generate and set the verification code
+// Method to generate and set a new verification code
 userSchema.methods.generateVerificationCode = function (): string {
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit code
   this.verificationCode = verificationCode;
   this.verificationCodeExpires = new Date(Date.now() + 60 * 60 * 1000); // Expires in 1 hour
   return verificationCode;
 };
 
-// Method to generate and set the password reset token
+// Method to generate and set a password reset token
 userSchema.methods.generateResetPasswordToken = function (): string {
   const resetToken = crypto.randomBytes(20).toString('hex'); // Generate random token
-  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex'); // Hash token
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex'); // Hash the token
   this.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
   return resetToken;
 };
